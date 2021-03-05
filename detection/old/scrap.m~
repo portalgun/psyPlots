@@ -1,0 +1,29 @@
+function out = scrap(obj,ind)
+    Y=[];
+    distA=obj.mDists{ind};
+    for i = 1:size(obj.cDists,2)
+        if i == ind
+            continue
+        end
+        distB=obj.mDists{i};
+        Y=[Y; distB.y];
+    end
+    out=distA.get_pdf_at(Y);
+end
+function out = get_nc_nd(obj,ind)
+    Y=[];
+    h=[];
+    for i = 1:size(obj.cDists,2)
+        if i == ind
+            continue
+        end
+        distB=obj.mDists{i};
+        Y=[Y; distB.y];
+        if isempty(h)
+            h=obj.cDists{i,ind};
+        end
+        h=h + obj.cDists{i,ind};
+    end
+    h=h./sum(h(:));
+% XXX h(Y)
+end
