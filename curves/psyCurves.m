@@ -1,4 +1,4 @@
-classdef psyCurves < handle
+classdef psyCurves < handle & psyCurves_plot
 % TODO
 % tight plots
 properties
@@ -56,6 +56,7 @@ properties
 
 end
 properties(Hidden=true)
+    stdNums
     Opts % for individual fits
 
     X % n x m x 3 ([std cmp chs ])
@@ -124,8 +125,6 @@ methods
         %%
         obj.parse_opts(Opts);
 
-
-
         if bTest
             obj.bTest=1;
         end
@@ -163,7 +162,7 @@ methods
         p.addParameter('nIntrvl',2);
         p.addParameter('nBoot',1000);
         p.addParameter('CIsz',95);
-        p.addParameter('flipCmpChs',0)
+        p.addParameter('flipCmpChs',0);
 
         p.addParameter('psyXtickFormat','%.02f');
         p.addParameter('psyYtickFormat','%.02f');
@@ -231,17 +230,6 @@ methods
     end
 
 
-    function obj=generate_colors(obj)
-        if ischar(obj.colormap)
-            cmp=eval(obj.colormap);
-        elseif isnumeric(obj.colormap)
-            cmp=obj.colormap;
-        end
-        inds=round(linspace(1,size(cmp,1),obj.nStd));
-        colors=cmp(inds,:);
-        obj.lcolors=colors;
-        obj.colors=colors;
-    end
 %% fit
     function obj=proc_dataTable(obj)
         iflds=fieldnames(obj.DT.index);
@@ -373,15 +361,6 @@ methods
         obj.curs{obj.ind}=obj.cur;
     end
 %% opts
-    function Opts=get_psy_plot_opts(obj)
-        Opts=struct();
-        Opts.xtickFormat=obj.psyXtickFormat;
-        Opts.ytickFormat=obj.psyYtickFormat;
-        Opts.xtickAngle =obj.psyXtickAngle;
-        Opts.ylim       =obj.psyYlim;
-        Opts.xlim       =[];
-        Opts.ax         ='auto';
-    end
     function obj=get_col_opts(obj,ind)
         if exist('ind','var') && ~isempty(ind)
             obj.ind=ind;
@@ -411,18 +390,56 @@ methods
         obj.Opts.bTitle=0;
     end
 %% PLOT PUBLIC
-    function [] = plot_curves(obj,SUBJS,opts)
+    function plot_curves_same(obj,SUBJS,opts,alias,stdNums)
         if ~exist('opts','var')
             opts=struct();
         end
         if ~exist('SUBJS','var')
             SUBJS=[];
         end
-        figure(nFn);
-        obj.plot_curve_all_p(SUBJS,opts);
+        if ~exist('alias','var')
+            alias=[];
+        end
+        if ~exist('stdNums','var')
+            stdNums=[];
+        end
+        Fig.new();
+        obj.plot_curve_all_p(SUBJS,opts,1,alias,stdNums);
+    end
+    function [] = plot_curves(obj,SUBJS,opts,alias,stdNums)
+        if ~exist('opts','var')
+            opts=struct();
+        end
+        if ~exist('SUBJS','var')
+            SUBJS=[];
+        end
+        if ~exist('alias','var')
+            alias=[];
+        end
+        if ~exist('stdNums','var')
+            stdNums=[];
+        end
+        Fig.new();
+        obj.plot_curve_all_p(SUBJS,opts,0,alias,stdNums);
+    end
+    function [] = plot_curves_each(obj,SUBJS,opts,alias,stdNums)
+        if ~exist('opts','var')
+            opts=struct();
+        end
+        if ~exist('SUBJS','var')
+            SUBJS=[];
+        end
+        if ~exist('alias','var')
+            alias=[];
+        end
+        if ~exist('stdNums','var')
+            stdNums=[];
+        end
+        Fig.new();
+        obj.plot_curve_all_p(SUBJS,opts,-1,alias,stdNums);
     end
     function [] = plot_thresh(obj)
-        figure(nFn)
+        Fig.new()
         obj.plot_thresh_all_p();
     end
 
@@ -430,98 +447,18 @@ end
 %% Plot Private
 methods(Hidden=true)
 %% plot parts
-    function obj = plot_curve_all_p(obj,SUBJS,opts)
-        if ~exist('opts','var') || isempty(opts)
-            opts=struct();
-        end
-        opts
-
-        obj.generate_colors();
-        obj.parse_opts();
-
-        if isfield(opts,'xtitl')
-            xtitl=opts.xtitl;
-        else
-            xtitl=obj.EXPS.get_xtitl();
-        end
-        ytitl='Proportion Cmp. Chosen';
-
-        if isfield(opts,'titl')
-            titl=opts.titl;
-        else
-            titl=obj.EXPS.get_titl;
-        end
-        rtitl=obj.EXPS.subjs;
-        rtitl
-        ctitl=[];
-
-
-        Opts=obj.get_psy_plot_opts();
-        Opts=structCombinePrefer(opts,Opts);
-
-        Opts.xticks=unique(round(obj.tX,2));
-        Opts.ax='square';
-
-        bSUBJS= exist('SUBJS','var') && ~isempty(SUBJS);
-        if ~bSUBJS
-            r=obj.nSubj;
-        elseif iscell(SUBJS) || isnumeric(SUBJS)
-            r=length(SUBJS);
-            rtitl=rtitl(SUBJS);
-        end
-        r
-        if ~isfield(Opts,'syms')
-            syms=repmat('o',r);
-        else
-            syms=Opts.syms;
-            Opts=rmfield(Opts,'syms')
-        end
-        Opts.position=[3 3 1060 350*r+200];
-
-        sp=subPlots([r 1],xtitl,ytitl,titl,rtitl,ctitl,Opts);
-
-        Ymin=[];
-        Ymax=[];
-        Xmin=[];
-        Xmax=[];
-        for ind = 1:obj.m
-            [std,subj]=ind2sub([obj.nStd obj.nSubj],ind);
-            if bSUBJS && ~ismember(subj,SUBJS)
-                continue
-            elseif bSUBJS
-                subj=find(SUBJS==subj);
-            end
-            obj.ind=ind;
-            obj.select_cur();
-            if isempty(obj.cur)
-                continue
-            end
-            obj.get_col_opts();
-            sp.select(subj,1);
-            hold on
-            obj.plot_curve_p([],syms(subj));
-            hold off
-            Ymin=min([Ymin obj.cur.Ymin]);
-            Ymax=max([Ymax obj.cur.Ymax]);
-            Xmin=min([Ymin obj.cur.Xmin]);
-            Xmax=max([Ymax obj.cur.Xmax]);
-        end
-        %sp.xlim=[Xmin Xmax];
-        %sp.ylim=[Ymin Ymax];
-        sp.finalize();
-
-    end
-    function obj = plot_curve_p(obj,ind,sym)
-        if exist('ind','var') && ~isempty(ind)
-            obj.ind=ind;
-            obj.select.cur();
-        end
-        obj.cur.lcolor=obj.Opts.color;
-        obj.cur.plot_boot_curve(sym);
-        hold off
-    end
 %% THRESH
     function obj=plot_thresh_all_p(obj,bAverage,bSame,opts)
+        % NOTE
+        bLookup=1;
+        alias='DSP2';
+        bins=[1,13];
+
+
+        if bLookup
+            lookup=Blk.load_lookup(alias);
+        end
+
         if ~exist('opts','var') || isempty(opts)
             opts=struct();
         end
@@ -562,7 +499,7 @@ methods(Hidden=true)
         else
             Opts.position=[3 3 1060 350*obj.nSubj+200];
         end
-        Opts=structCombinePrefer(opts,Opts);
+        Opts=Struct.combinePref(opts,Opts);
         if isfield(Opts,'xtitl')
             xtitl=Opts.xtitl;
         end
@@ -590,7 +527,7 @@ methods(Hidden=true)
         else
             RC=[obj.nSubj 1];
         end
-        sp=subPlots(RC,xtitl,ytitl,titl,rtitl,ctitl,Opts);
+        sp=SubPlots(RC,xtitl,ytitl,titl,rtitl,ctitl,Opts);
 
         if bAverage
             sp.select(1,1);
@@ -608,7 +545,7 @@ methods(Hidden=true)
             if size(colors,1) == obj.nSubj
                 color=colors(j,:);
             else
-                color=colors(1,:)
+                color=colors(1,:);
             end
             if numel(syms) == obj.nSubj
                 sym=syms(j);
@@ -637,7 +574,7 @@ methods(Hidden=true)
     end
     function obj = plot_thresh_subj_avg_stdev_p(obj,color)
         if ~exist('color','var') || isempty(color)
-            color=[.5 .5 5]
+            color=[.5 .5 5];
         end
         tX=reshape(obj.tX,obj.nStd,obj.nSubj);
         tMU=reshape(obj.tMU,obj.nStd,obj.nSubj);
@@ -647,7 +584,7 @@ methods(Hidden=true)
 
         U=tMu+tStd;
         L=tMu-tStd;
-        interv(tX,U,L,color ,'FaceAlpha',obj.CIalpha,'EdgeColor','none');
+ Plot.interv(tX,U,L,color ,'FaceAlpha',obj.CIalpha,'EdgeColor','none');
     end
     function obj = plot_thresh_p(obj,subj,sym)
         if ~exist('sym','var') || isempty(sym)

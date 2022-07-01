@@ -38,7 +38,7 @@ methods
 %% IND ALL
     function plot_counts_ind_all(obj)
         for i = 1:obj.nSubj
-            fig=figure(nFn);
+            fig=Fig.new();
             obj.plot_counts_p(i);
             if obj.bSaveFig
                 obj.save_fig(fig,i,'counts','inds');
@@ -47,7 +47,7 @@ methods
     end
     function plot_ellipse_ind_all(obj)
         for i = 1:obj.nSubj
-            fig=figure(nFn);
+            fig=Fig.new();
             obj.plot_ellipse_p(i);
             if obj.bSaveFig
                 obj.save_fig(fig,i,'DVellipse','inds');
@@ -57,7 +57,7 @@ methods
     function plot_magr_ind_all(obj,Opts)
         % HERE
         for i = 1:obj.nSubj
-            fig=figure(nFn);
+            fig=Fig.new();
             obj.plot_magr_p(Opts,i);
             if obj.bSaveFig
                 obj.save_fig(fig,i,'magr','inds');
@@ -67,7 +67,7 @@ methods
     function plot_scatter_abs_thresh_ind_all(obj,Opts,varargin)
         % HERE
         if ~exist('Opts','var'); Opts=struct(); end
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_abs_p(0,0,0,0,Opts,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterAbs','inds');
@@ -76,7 +76,7 @@ methods
     function plot_scatter_abs_ind_all(obj,Opts,varargin)
         % HERE
         if ~exist('Opts','var'); Opts=struct(); end
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_abs_p(1,0,0,0,Opts,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterAbs','inds');
@@ -85,7 +85,7 @@ methods
     function plot_scatter_abs_split_ind_all(obj,Opts,varargin)
         % HERE
         if ~exist('Opts','var'); Opts=struct(); end
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_abs_p(1,0,0,1,Opts,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterAbsSplit','inds');
@@ -94,7 +94,7 @@ methods
 %% STD AL[],L
     function plot_bin_ratio_comb_std_all(obj,varargin)
         for i = 1:obj.nSubj
-            fig=figure(nFn);
+            fig=Fig.new();
             obj.plot_bin_rho_comb_std_ind(i,varargin{:})
             if obj.bSaveFig
                 obj.save_fig(fig,[],'binRatio','std');
@@ -103,21 +103,21 @@ methods
     end
 %% IND
     function plot_counts_ind(obj,ind)
-        figure(nFn)
+        Fig.new()
         obj.plot_counts_p(ind);
         if obj.bSaveFig
             obj.save_fig(fig,ind,'counts','inds');
         end
     end
     function plot_ellipse_ind(obj,Opts,subj)
-        figure(nFn)
+        Fig.new()
         obj.plot_ellipse_p(1,0,0,Opts,subj);
         if obj.bSaveFig
             obj.save_fig(fig,subj,'DVellipse','inds');
         end
     end
     function plot_magr_ind(obj,Opts,ind)
-        figure(nFn)
+        Fig.new()
         obj.plot_magr_p(Opts,ind);
         if obj.bSaveFig
             obj.save_fig(fig,ind,'magr','inds');
@@ -133,7 +133,7 @@ methods
     %
     function plot_scatter_rho_comb_all(obj,Opts)
     % HERE
-        fig=figure(nFn);
+        fig=Fig.new();
         if ~exist('Opts','var'); Opts=struct(); end
         obj.plot_scatter_rho_p(1,1,Opts);
         if obj.bSaveFig
@@ -142,14 +142,14 @@ methods
     end
 %%%
     function plot_scatter_abs_thresh_comb_all(obj,varargin)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_abs_p(0,1,1,0,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterAbs','inds');
         end
     end
     function plot_scatter_abs_thresh_comb_subj(obj,varargin)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_abs_p(0,0,1,1,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterAbs','inds');
@@ -159,7 +159,7 @@ methods
 % COMB CMP
     % no bin
     function plot_scatter_rho_comb_cmp(obj)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_rho_ratio_p('rho',0,1);
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterRho','cmp');
@@ -168,7 +168,7 @@ methods
 % COMB subj new
     function plot_scatter_rho_comb_subj(obj,Opts)
         if ~exist('Opts','var'); Opts=struct(); end
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_rho_p(0,1,0,Opts);
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterRatio','subj');
@@ -177,7 +177,7 @@ methods
 
     function plot_bin_rho_comb_std_all(obj,varargin)
         for i = 1:obj.nSubj
-            fig=figure(nFn);
+            fig=Fig.new();
             obj.plot_bin_rho_comb_std_ind(i,varargin{:})
             if obj.bSaveFig
                 obj.save_fig(fig,[],'binRho','std');
@@ -186,28 +186,28 @@ methods
     end
 %% BIN
     function plot_bin_rho_same_all(obj,Opts,varargin)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_bin_rho_p(0,0,1,0,Opts,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'binRho','all');
         end
     end
     function plot_bin_rho_comb_all(obj,Opts,varargin)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_bin_rho_p(0,0,1,1,Opts,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'binRho','all');
         end
     end
     function plot_bin_ratio_comb_all(obj,Opts,varargin)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_bin_rho_p(1,0,1,1,Opts,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'binRho','all');
         end
     end
     function plot_bin_ratio_same_all(obj,Opts,varargin)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_bin_rho_p(1,0,1,0,Opts,varargin{:});
         if obj.bSaveFig
             obj.save_fig(fig,[],'binRho','all');
@@ -219,7 +219,7 @@ methods
     function plot_scatter_rho_ind_comb(obj,Opts)
     % HERE
         if ~exist('Opts','var'); Opts=struct(); end
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_ratio_p(0,1,0,Opts);
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterRatio','subj');
@@ -229,7 +229,7 @@ methods
     function plot_scatter_ratio_ind_all(obj,Opts)
     % HERE
         if ~exist('Opts','var'); Opts=struct(); end
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_ratio_p(1,0,0,Opts);
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterRatio','inds');
@@ -238,7 +238,7 @@ methods
     function plot_scatter_ratio_ind_comb(obj,Opts)
     % HERE
         if ~exist('Opts','var'); Opts=struct(); end
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_ratio_p(1,1,0,Opts);
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterRatio','subj');
@@ -247,7 +247,7 @@ methods
     function plot_scatter_ratio_comb_subj(obj,Opts)
     % HERE
         if ~exist('Opts','var'); Opts=struct(); end
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_scatter_ratio_p(1,0,1,Opts);
         if obj.bSaveFig
             obj.save_fig(fig,[],'scatterRatio','subj');
@@ -255,7 +255,7 @@ methods
     end
     function plot_scatter_ratio_comb_all(obj,Opts)
     % HERE
-        fig=figure(nFn);
+        fig=Fig.new();
         if ~exist('Opts','var'); Opts=struct(); end
         obj.plot_scatter_ratio_p(1,1,1,Opts);
         if obj.bSaveFig

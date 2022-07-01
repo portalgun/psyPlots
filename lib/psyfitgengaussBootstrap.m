@@ -115,8 +115,8 @@ if bPLOT
     PchsPlt = psyfitgengaussfunc([],XcmpPlt,mDta,sDta,bDta,DPcrt,nIntrvl,0);
     plot(XcmpPlt,PchsPlt,'k'); hold on;
     plot(XcmpUnq,PcmpDta,'ko','markerface','w','markersize',12);
-    formatFigure('X','Proportion Cmp Chosen');
-    formatFigure('Mu','Num Samples',['\mu=' num2str(mDta,'%2.2f') ',\sigma=' num2str(sDta,'%2.2f') ',\beta=' num2str(bDta,'%2.2f') ]);
+    Fig.format('X','Proportion Cmp Chosen');
+    Fig.format('Mu','Num Samples',['\mu=' num2str(mDta,'%2.2f') ',\sigma=' num2str(sDta,'%2.2f') ',\beta=' num2str(bDta,'%2.2f') ]);
     writeText(.75,.1,{['N=' num2str(numel(RcmpChs))]},'ratio');
     axis square
 
@@ -124,21 +124,21 @@ if bPLOT
     subplot(1,4,2);
     [Hm,Bm] = hist(mFitDstb,21);
     bar(Bm,Hm,1,'facecolor','w');
-    formatFigure('Mu','Num Samples',['\mu=' num2str(mMU,    '%2.2f') ', CI^{' num2str(CIsz) '}=[' num2str(mCI(1),   '%2.2f') ',' num2str(mCI(2),'%2.2f')    ']']);
+    Fig.format('Mu','Num Samples',['\mu=' num2str(mMU,    '%2.2f') ', CI^{' num2str(CIsz) '}=[' num2str(mCI(1),   '%2.2f') ',' num2str(mCI(2),'%2.2f')    ']']);
     writeText(.1,.9,{[num2str(prcntUse) '% Data Used']},'ratio',18)
     axis square
     % DISTRIBUTION OF SIGMA ESTIMATES
     subplot(1,4,3);
     [Hs,Bs]=hist(sFitDstb,21);
     bar(Bs,Hs,1,'facecolor','w');
-    formatFigure('Sigma','Num Samples',['\sigma=' num2str(sMU,'%2.2f') ', CI^{' num2str(CIsz) '}=[' num2str(sCI(1),'%2.2f') ',' num2str(sCI(2),'%2.2f') ']']);
+    Fig.format('Sigma','Num Samples',['\sigma=' num2str(sMU,'%2.2f') ', CI^{' num2str(CIsz) '}=[' num2str(sCI(1),'%2.2f') ',' num2str(sCI(2),'%2.2f') ']']);
     writeText(.1,.9,{[num2str(prcntUse) '% Data Used']},'ratio',18)
     axis square
     % DISTRIBUTION OF BETA  ESTIMATES
     subplot(1,4,4);
     [Hb,Bb]=hist(bFitDstb,21);
     bar(Bb,Hb,1,'facecolor','w');
-    formatFigure('Beta','Num Samples',['\beta=' num2str(bMU,  '%2.2f') ', CI^{' num2str(CIsz) '}=[' num2str(bCI(1), '%2.2f') ',' num2str(bCI(2),'%2.2f')  ']']);
+    Fig.format('Beta','Num Samples',['\beta=' num2str(bMU,  '%2.2f') ', CI^{' num2str(CIsz) '}=[' num2str(bCI(1), '%2.2f') ',' num2str(bCI(2),'%2.2f')  ']']);
     writeText(.1,.9,{[num2str(prcntUse) '% Data Used']},'ratio',18)
     axis square
 end

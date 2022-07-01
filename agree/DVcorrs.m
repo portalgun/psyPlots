@@ -138,7 +138,7 @@ methods
         PASSES=obj.get_passes();
         nCmp=obj.get_nCmp();
 
-        IND=distribute(1:obj.nStd,1:obj.nSubj,1:size(PASSES,1),1:nCmp);
+        IND=Set.distribute(1:obj.nStd,1:obj.nSubj,1:size(PASSES,1),1:nCmp);
         ind=repelem(transpose(1:numel(obj.cell)),size(IND,1)/numel(obj.cell),1);
         IND=[IND ind];
     end
@@ -175,11 +175,11 @@ methods
     end
     function [IND]=get_ind_ind(obj)
         PASSES=obj.get_passes();
-        IND=distribute(1:obj.nStd,1:obj.nSubj,1:size(PASSES,1));
+        IND=Set.distribute(1:obj.nStd,1:obj.nSubj,1:size(PASSES,1));
     end
     function [IND]=get_ind_subj(obj)
         PASSES=obj.get_passes();
-        IND=distribute(1:obj.nStd,1:size(PASSES,1));
+        IND=Set.distribute(1:obj.nStd,1:size(PASSES,1));
     end
     function [val,valid]=get_val_all(obj,name,cellName,varargin)
         % varargin = passses
@@ -377,7 +377,7 @@ methods
         obj.init_ind();
         IND=obj.get_ind_ind();
         PASSES=obj.get_passes();
-        p=pr(size(IND,1),'Fitting all agreement',[],1);
+        p=Pr(size(IND,1),'Fitting all agreement',[],1);
         for i = 1:size(IND,1)
             p.u();
             std=IND(i,1);
@@ -439,7 +439,7 @@ methods
         obj.init_subj_comb();
         PASSES=obj.get_passes();
         IND=obj.get_ind_subj();
-        p=pr(size(IND,1),'Fitting subj comb agreement',[],1);
+        p=Pr(size(IND,1),'Fitting subj comb agreement',[],1);
         for i = 1:size(IND,1)
             p.u();
             std=IND(i,1);

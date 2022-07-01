@@ -16,17 +16,17 @@ methods
         maxi=max(A);
         n=numel(unique(A))
 
-        if isvar('X')
+        if exist('X','var') && ~isempty(X)
             obj.X=X;
         else
             obj.X=linspace(mini,maxi,n);
         end
-        if isvar('nSmp')
+        if exist('nSmp','var') && ~isempty(nSmp)
             obj.nSmp=nSmp;
         else
             obj.nSmp=n;
         end
-        if isvar('minMax')
+        if exist('minMax','var') && ~isempty(minMax)
             obj.minMax=minmax;
         else
             obj.minMax=[mini maxi];
@@ -94,7 +94,7 @@ methods
 
     end
     function []=plot(obj)
-        figure(nFn)
+        Fig.new()
         plot(obj.fPr_ALL,obj.tPr_ALL,'LineWidth',2);hold on
         plot([0,1],[0,1],'k--');
         plot(c1AFCx,c1AFCy,'k');

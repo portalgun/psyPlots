@@ -7,7 +7,7 @@ methods
         str=obj.get_sub_str(sub);
         Opts.titl=['Observer ' sub ' DV correlation'];
         Opts.ax='square';
-        Opts=structCombinePrefer(Opts,Opts);
+        Opts=Struct.combinePref(Opts,Opts);
     end
     function Opts=get_counts_opts(obj,Opts,sub)
         nCmp=obj.get_nCmp();
@@ -24,7 +24,7 @@ methods
         Optsylim=[.4 1]; % NOTE
         Opts.ax='square';
 
-        Opts=structCombinePrefer(Opts,Opts);
+        Opts=Struct.combinePref(Opts,Opts);
     end
     function Opts=get_magr_opts(obj,Opts,sub)
         Opts.ytitl='Proprtion Cmp. Chosen';
@@ -35,7 +35,7 @@ methods
         Opts.yticks=[.5 .75 1];
 
         Opts.ax='square';
-        Opts=structCombinePrefer(Opts,Opts);
+        Opts=Struct.combinePref(Opts,Opts);
     end
     function Opts=get_bin_ratio_opts(obj,opts,sub)
         str=obj.get_sub_str(sub);
@@ -46,7 +46,7 @@ methods
         Opts.ax='square';
 
 
-        Opts=structCombinePrefer(opts,Opts);
+        Opts=Struct.combinePref(opts,Opts);
     end
     function  Opts=get_bin_rho_opts(obj,opts,sub)
         str=obj.get_sub_str(sub);
@@ -56,7 +56,7 @@ methods
         Opts.bLog=0;
         Opts.ax='square';
 
-        Opts=structCombinePrefer(opts,Opts);
+        Opts=Struct.combinePref(opts,Opts);
     end
     function Opts=get_thresh_opts(obj,Opts)
         Opts.sz=[1,1];
@@ -66,7 +66,7 @@ methods
         Opts.yscale='log'
         Opts.xscale='log'
         Opts.ax='square';
-        Opts=structCombinePrefer(opts,Opts);
+        Opts=Struct.combinePref(opts,Opts);
     end
     function Opts=get_ratio_scatter_opts(obj,opts)
         Opts.ytitl='Importance Ratio';
@@ -74,19 +74,19 @@ methods
         Opts.yscale='log';
         Opts.ax='square';
 
-        Opts=structCombinePrefer(opts,Opts);
+        Opts=Struct.combinePref(opts,Opts);
     end
     function Opts=get_rho_scatter_opts(obj,opts)
         Opts.ytitl='Between pass correlation';
         Opts.titl='DV correlation';
         Opts.ax='square';
-        Opts=structCombinePrefer(opts,Opts);
+        Opts=Struct.combinePref(opts,Opts);
     end
     function Opts=scatter_abs_opts(obj,Opts)
         Opts.titl='Stimulus variability and internal noise estimates';
 
         Opts.ax='square';
-        Opts=structCombinePrefer(Opts,Opts);
+        Opts=Struct.combinePref(Opts,Opts);
 
     end
     function str=get_sub_str(obj,sub)

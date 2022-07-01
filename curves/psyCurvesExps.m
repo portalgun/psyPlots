@@ -119,7 +119,7 @@ methods
         end
         N=size(obj.(fld),1);
         for i = 1:N
-            fig=figure(nFn);
+            fig=Fig.new();
             obj.(fld){i}.plot_thresh_all_p(bAverage,bSame);
             if obj.bSaveFig
                 obj.save_fig(fig,i,['thesh' str],fld)
@@ -130,7 +130,7 @@ methods
     function obj=plot_curves(obj,fld)
         N=size(obj.(fld),1);
         for i=1:N
-            fig=figure(nFn);
+            fig=Fig.new();
             obj.(fld){i}.plot_curve_all_p();
             if obj.bSaveFig
                 obj.save_fig(fig,i,'psyCurve',fld);
@@ -140,7 +140,7 @@ methods
 %% SAVE
     function obj=save_fig(obj,fig,ind,figType,dataType)
         name=obj.gen_fname(ind,figType,dataType);
-        dir=BLdirs('fig');
+        dir=Env.var('FIG');
         for i = 1:length(obj.figSaveTypes)
             ext=obj.figSaveTypes{i};
             fname=[dir name ext];
@@ -155,7 +155,7 @@ methods
             EXPS=obj.EXPS;
         end
         EXP=EXPS.get_EXP(ind);
-        name=[figType '-' dataType und EXP.name];
+        name=[figType '-' dataType '_' EXP.name];
     end
     function obj=save_off(obj)
         obj.bSaveFig=0;

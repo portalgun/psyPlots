@@ -1,4 +1,4 @@
-function writeText(xPositions,yPositions,txtStrings,ratioORabs,fs,hPos,rotDeg,vPos,textColor,zPositions)
+function writeText(xPositions,yPositions,txtStrings,ratioORabs,fs,hPos,rotDeg,vPos,textColor,zPositions,xlims,ylims)
  
 % function writeText(xPositions,yPositions,txtStrings,ratioORabs,fs,hPos,rotDeg,vPos,textColor,zPositions)
 %
@@ -54,7 +54,8 @@ if ~exist('zPositions','var') || isempty(zPositions)
     end
 end
 % GET AXIS LIMITS
-[xlims ylims] = getLims;
+
+[xlims ylims] = Axis.getLims;
 
 if (strcmp(ratioORabs,'abs'))
     xPos = xPositions;

@@ -83,7 +83,7 @@ methods(Hidden=true)
     end
     function obj=format_magr(obj)
         stdXunq=unique(obj.stdX);
-        formatFigure('% Comparison Chosen','% Agreement',['stdX = ' num2str(round(stdXunq,2,'significant'))]);
+        Axis.format('% Comparison Chosen','% Agreement',['stdX = ' num2str(round(stdXunq,2,'significant'))]);
         axis square;
         ylim([0.4 1]);
         set(gca,'XTick',(0:0.25:1));
@@ -101,13 +101,13 @@ methods(Hidden=true)
         if min(obj.DATA(:)) ~= 0 || max(obj.DATA(:)) ~= 1
             plot(obj.DATA(:,1),obj.DATA(:,2),'ko','markerface','w','markersize',8);
         end
-        formatFigure();
+        Axis.format();
     end
     function obj=label_ellipse_p(obj)
         x='Decision Variable: Pass 1';
         y='Decision Variable: Pass 2';
         titl=['\rho=' num2str(obj.rho,'%.2f') ', \mu_1=' num2str(obj.mu1,'%.2f') ', \mu_2=' num2str(obj.mu2,'%.2f') ', c_1=' num2str(obj.cr2,'%.2f') ', c_2=' num2str(obj.cr2,'%.2f')];
-        formatFigure(x,y,titl);
+        Axis.format(x,y,titl);
     end
     function obj=get_colors(obj)
         C=obj.nCmp;
@@ -136,13 +136,13 @@ methods(Hidden=true)
         axis square;
         set(gca,'xtick',[1 2 3 4]);
         set(gca,'XTickLabel',{'--','-+','+-','++',});
-        formatFigure();
+        Axis.format();
     end
     function obj=label_response_count_p(obj)
         x='Joint Response Type';
         y='% Responses';
         titl='';
-        formatFigure(x,y,titl);
+        Axis.format(x,y,titl);
     end
 %% RHO PLOT
     function plot_rho_bin_p(obj,RHO,nBins)
@@ -150,7 +150,7 @@ methods(Hidden=true)
             RHO=obj.RHO;
         end
         if ~exist('nBins','var') || isempty(nBins)
-            X=bin_widths_FD(RHO);
+            X=Hist.bin_widths_FD(RHO);
         else
             X=nBins;
         end
@@ -158,7 +158,7 @@ methods(Hidden=true)
         bar(X,counts,1,'w','LineWidth',obj.LineWidth);
     end
     function format_rho_bin_p(obj)
-        formatFigure('Between pass correlation','Count');
+        Axis.format('Between pass correlation','Count');
     end
 
     function plot_rho_scatter_p(obj,RHO)
@@ -201,7 +201,7 @@ methods(Hidden=true)
         if ~exist('nBins','var')
             nBins=[];
         end
-        %X=bin_widths_FD(log(r),1);
+        %X=Hist.bin_widths_FD(log(r),1);
         %X=unique([X -X]);
         %[counts,ctrs]=hist(log(r),X);
         loghist(r,nBins,'LineWidth',obj.LineWidth,'EdgeColor',[0 0 0]);
@@ -210,7 +210,7 @@ methods(Hidden=true)
         %xlim([-1,1]);
     end
     function format_ratio_bin_p (obj)
-        formatFigure('\sigma^{2}_{Int}/\sigma^{2}_{Ext}','Count')
+        Axis.format('\sigma^{2}_{Int}/\sigma^{2}_{Ext}','Count')
     end
 
     function plot_rho_scatter2_p(obj,sym,stagger)
@@ -246,7 +246,7 @@ methods(Hidden=true)
         else
             xtitl=[obj.Xname];
         end
-        formatFigure(xtitl,'\sigma^{2}_{Int}/\sigma^{2}_{Ext}')
+        Axis.format(xtitl,'\sigma^{2}_{Int}/\sigma^{2}_{Ext}')
         set(gca,'yscale','log');
 
         vals=[.1 .3  1  3 10];
@@ -305,7 +305,7 @@ methods(Hidden=true)
         else
             xtitl=[obj.Xname];
         end
-        formatFigure(xtitl,'\hat{\sigma}^{2}_{Int} \hat{\sigma}^{2}_{Ext}')
+        Axis.format(xtitl,'\hat{\sigma}^{2}_{Int} \hat{\sigma}^{2}_{Ext}')
 
         % XXX
         %set(gca,'yscale','log');
@@ -332,7 +332,7 @@ methods(Hidden=true)
     end
     function obj=label_agree_curve_p(obj)
         titl=[];
-        formatFigure('% Comparison Chosen','% Agreement',titl);
+        Axis.format('% Comparison Chosen','% Agreement',titl);
     end
 end
 end

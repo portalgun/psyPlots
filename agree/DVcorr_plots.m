@@ -28,7 +28,7 @@ methods
         Opt.ylimSpace=.15;
 
         C=obj.nCmp;
-        sp=subPlots([1,C],'Joint Response Type','Proportion Chosen','','',ctitl,Opts);
+        sp=SubPlots([1,C],'Joint Response Type','Proportion Chosen','','',ctitl,Opts);
         for c = 1:C
             sp.select(1,c);
             obj.select(c);
@@ -40,7 +40,7 @@ methods
         if exist('ind','var') && isempty(ind)
             obj.select(ind);
         end
-        figure(nFn)
+        Fig.new();
         obj.plot_response_count_p();
         obj.label_response_count_p();
     end
@@ -69,7 +69,7 @@ methods
                 text(1,-3,txt,'fontSize',16);
             end
         end
-        hold off
+        hold off;
     end
     function function_ellipse_all_same(obj)
         str=sprintf('%.2f',unique(round(obj.std,2)));
@@ -94,7 +94,7 @@ methods
         if exist('ind','var') && isempty(ind)
             obj.select(ind);
         end
-        figure(nFn)
+        Fig.new();
         obj.plot_ellipse_p();
         obj.label_ellipse_p();
     end

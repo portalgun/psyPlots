@@ -65,7 +65,7 @@ methods
 
     end
     function []=plot(obj)
-        figure(nFn)
+        Fig.new()
         plot(obj.fPr_ALL,obj.tPr_ALL,'LineWidth',2);hold on
         plot([0,1],[0,1],'k--');
         plot(c1AFCx,c1AFCy,'k');

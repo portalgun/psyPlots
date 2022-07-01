@@ -106,7 +106,7 @@ methods
             Opts.rtitl=obj.EXPS.get_rc_title('std');
             %Opts.sub=obj.EXPS.get_rc_title('subjs', obj.subjSel);
         elseif obj.bCmp
-            Opts.rtitl=strcat('Std ',   strobj.split(num2strSane([1:obj.nStd]),','));
+            Opts.rtitl=strcat('Std ',   strobj.split(Num.toStr([1:obj.nStd]),','));
             Opts.sub=num2str(obj.subj);
         elseif nflds(obj.EXPS) > 0
             Opts.xtitl=obj.EXPS.get_xtitl();
@@ -119,11 +119,11 @@ methods
             Opts.rtitl=join(nchoosek(Opts.rtitl,obj.nPssAtOnce));
         else
             Opts.xtitl=obj.cell{1}.xlabel_rho_scatter_p();
-            Opts.rtitl=strcat('Passes ', strobj.split(num2strSane(obj.ITER.PASSES),';'));
+            Opts.rtitl=strcat('Passes ', strobj.split(Num.toStr(obj.ITER.PASSES),';'));
             if bSame
                 Opts.citl=[];
             else
-                Opts.ctitl=strcat('Subj ',   strobj.split(num2strSane([1:obj.nSubj]),','));
+                Opts.ctitl=strcat('Subj ',   strobj.split(Num.toStr([1:obj.nSubj]),','));
             end
         end
     end
@@ -454,10 +454,10 @@ methods
         ctitl=obj.mainSpOpts.ctitl;
         opts=obj.spOpts;
 
-        obj.sp=subPlots(sz,xtitl,ytitl,titl,rtitl,ctitl,opts);
+        obj.sp=SubPlots(sz,xtitl,ytitl,titl,rtitl,ctitl,opts);
     end
     function plot_interv(obj)
-        interv(obj.iter.X, obj.iter.U, obj.iter.L); hold on;
+         Plot.interv(obj.iter.X, obj.iter.U, obj.iter.L); hold on;
     end
     function plot(obj)
         plot(obj.iter.X, obj.iter.m,'ko', 'MarkerFaceColor','w','MarkerSize',10,'LineWidth',2);
@@ -502,7 +502,7 @@ methods
     end
     function staggers=get_staggers(obj,X)
         d=diff(X)/2;
-        staggers=cell2mat(arrayfun(@(x) linspace(0,x,obj.nSubj)-x/2,d,UO,false));
+        staggers=cell2mat(arrayfun(@(x) linspace(0,x,obj.nSubj)-x/2,d,UniformOutput,false));
         staggers=[staggers(1,:); staggers];
     end
 end

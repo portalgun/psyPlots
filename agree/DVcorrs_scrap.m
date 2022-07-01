@@ -1,13 +1,13 @@
 %% COMB
     function plot_ellipse_comb_subj(obj)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_ellipse_subj_p();
         if obj.bSaveFig
             obj.save_fig(fig,[],'DVellipse','comb');
         end
     end
     function plot_magr_comb_subj(obj)
-        fig=figure(nFn);
+        fig=Fig.new();
         obj.plot_magr_subj_p();
         if obj.bSaveFig
             obj.save_fig(fig,[],'magr','comb');
@@ -24,8 +24,8 @@
             rtitl=obj.EXPS.get_rc_title('std');
             ctitl=join(nchoosek(ctitl,obj.nPssAtOnce));
         else
-            ctitl=strcat('Passes ', strsplit(num2strSane(PASSES),';'));
-            rtitl=strcat('Std ',   strsplit(num2strSane([1:obj.nStd]),','));
+            ctitl=strcat('Passes ', strsplit(Num.toStr(PASSES),';'));
+            rtitl=strcat('Std ',   strsplit(Num.toStr([1:obj.nStd]),','));
         end
         if obj.bFlipRC
             r=rtitl;
@@ -34,7 +34,7 @@
             ctitl=r;
             sz=fliplr(sz);
         end
-        sp=subPlots(sz,'1st pass decision variable','2nd pass decision variable','DV correlation - combined subject data',rtitl,ctitl);
+        sp=SubPlots(sz,'1st pass decision variable','2nd pass decision variable','DV correlation - combined subject data',rtitl,ctitl);
         for i = 1:size(IND,1)
             ind=IND(i,end);
             std=IND(i,1);
@@ -61,9 +61,9 @@
         x=unique(obj.stdXall);
         y=[.01 .03 .1 .3  1 3 10];
 
-        ctitl=strcat('Passes ', strsplit(num2strSane(PASSES),';'));
-        rtitl=strcat('Subj ',   strsplit(num2strSane([1:obj.nSubj]),','));
-        sp=subPlots(sz,xlabl,ylabl,'DV correlation',rtitl,ctitl,[],x,y);
+        ctitl=strcat('Passes ', strsplit(Num.toStr(PASSES),';'));
+        rtitl=strcat('Subj ',   strsplit(Num.toStr([1:obj.nSubj]),','));
+        sp=SubPlots(sz,xlabl,ylabl,'DV correlation',rtitl,ctitl,[],x,y);
         for i = 1:size(IND,1)
             ind=IND(i,end);
             passes=PASSES(ind,:);
@@ -76,7 +76,7 @@
             obj.cellSubj{i}.format_rho_scatter_p();
             rang=max(x)-min(x);
             xlim([min(x)-rang*.15 max(x)+rang*.15]);
-            %formatFigure();
+            %Fig.format();
 
         end
         sp.finalize();
@@ -94,10 +94,10 @@
             rtitl=obj.EXPS.get_rc_title('std');
             ctitl=join(nchoosek(ctitl,obj.nPssAtOnce));
         else
-            ctitl=strcat('Passes ', strsplit(num2strSane(PASSES),';'));
-            rtitl=strcat('Std ',   strsplit(num2strSane([1:obj.nStd]),','));
+            ctitl=strcat('Passes ', strsplit(Num.toStr(PASSES),';'));
+            rtitl=strcat('Std ',   strsplit(Num.toStr([1:obj.nStd]),','));
         end
-        sp=subPlots(sz,xlabl,ylabl,'Pass Agreement',rtitl,ctitl,[]);
+        sp=SubPlots(sz,xlabl,ylabl,'Pass Agreement',rtitl,ctitl,[]);
         sp.ylim=[.4 1];
         for i = 1:size(IND,1)
             std=IND(i,1);

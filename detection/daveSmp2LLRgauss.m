@@ -29,7 +29,7 @@ function [DV_R,DV_L,X] = daveSmp2LLRgauss(zA,zB,minMax,nBin,nIntrvl,bPlot)
 
     if bPlot==1
         [~,~,idxM] = daveROC(DV_L,DV_R,X,minMax,length(DV_L),nIntrvl,0);
-        figure(nFn)
+        Fig.new()
             plot(DV_R); hold on
             plot(DV_L)
             scatter(X(idxM),0,'kX','LineWidth',2)

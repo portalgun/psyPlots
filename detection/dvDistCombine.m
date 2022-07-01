@@ -70,7 +70,7 @@ methods
         obj.LLRbCtrs=cell(obj.ninds,1);
         for j = 1:obj.ninds
             LLRs=[obj.LLRa{j}; obj.LLRb{j}];
-            ctrs=bin_widths_FD(LLRs);
+            ctrs=Hist.bin_widths_FD(LLRs);
             if numel(ctrs) > 1000
                 [~,ctrs]=hist(LLRs,1000);
             end

@@ -58,7 +58,7 @@ methods(Hidden=true)
         SP.finalize();
         function plot_fun(SP)
             I=SP.iter;
-            h2=interv(I.X,I.U,I.L,I.color); hold on;
+            h2=Plot.interv(I.X,I.U,I.L,I.color); hold on;
             plot(I.X,I.m,[I.sym 'k'],'MarkerFaceColor','w','MarkerSize',10,'LineWidth',2); hold on
         end
 
@@ -135,8 +135,8 @@ methods(Hidden=true)
         sgtitle('Stimulus variability and internal noise estimates');
         function plot_fun(SP)
             I=SP.iter;
-            h1=interv(I.X,I.UI,I.LI,'b'); hold on;
-            h2=interv(I.X,I.UE,I.LE,'r'); hold on;
+            h1=Plot.interv(I.X,I.UI,I.LI,'b'); hold on;
+            h2=Plot.interv(I.X,I.UE,I.LE,'r'); hold on;
             plot(I.X,I.mI,[I.sym 'k'],'MarkerFaceColor','w','MarkerSize',10,'LineWidth',2); hold on
             plot(I.X,I.mE,[I.sym 'k'],'MarkerFaceColor','w','MarkerSize',10,'LineWidth',2);
             legend([h1,h2],{'\sigma_{Int}^2','\sigma_{Ext}^2'});
@@ -190,9 +190,9 @@ methods(Hidden=true)
         end
 
         %histogram(R,8)
-        hst=histo(R,BE,'bLog',Opts.bLog);
+        hst=Hist(R,BE,'bLog',Opts.bLog);
         if ~bEdge
-            hst=histo(R,hst.edges,'bLog',Opts.bLog,'bSameColor',1);
+            hst=Hist(R,hst.edges,'bLog',Opts.bLog,'bSameColor',1);
         end
         hst.edges
         for i = 1:size(R,1)
@@ -225,8 +225,8 @@ methods(Hidden=true)
             R=transpose(R(:));
         end
 
-        hst=histo(R,[],'bLog',Opts.bLog);
-        hst=histo(R,hst.edges,'bLog',Opts.bLog,'bSameColor',1);
+        hst=Hist(R,[],'bLog',Opts.bLog);
+        hst=Hist(R,hst.edges,'bLog',Opts.bLog,'bSameColor',1);
         for i = 1:size(R,1)
             SP.get_iter(i);
 
@@ -262,7 +262,7 @@ methods(Hidden=true)
             dx=squeeze(Xt(i,:,:));
             dy=squeeze(Yt(i,:,:));
 
-            errorbarSane(x,y,dx,dy,'k-','LineWidth',obj.LineWidth)
+            Plot.error(x,y,dx,dy,'k-','LineWidth',obj.LineWidth)
             %p(i)=plot(T(i,:,1),T(i,:,2),[shapes{i} 'k'],'LineWidth',obj.LineWidth,'MarkerFaceColor','w','MarkerSize',10)
             text{i}=['Observer ' num2str(i)];
         end
@@ -366,7 +366,7 @@ methods(Hidden=true)
     end
     function obj=save_fig(obj,fig,ind,figType,dataType)
         name=obj.gen_fname(ind,figType,dataType);
-        dir=BLdirs('fig');
+        dir=Env.var('FIG');
         for i = 1:length(obj.figSaveTypes)
             ext=obj.figSaveTypes{i};
             fname=[dir name ext];
@@ -378,9 +378,9 @@ methods(Hidden=true)
     function name=gen_fname(obj,ind,figType,dataType)
         if ~isempty(ind)
             subj=obj.EXPS.subjs{ind};
-            name=[figType '-' dataType '-' subj und obj.EXPS.name];
+            name=[figType '-' dataType '-' subj '_' obj.EXPS.name];
         else
-            name=[figType '-' dataType und obj.EXPS.name];
+            name=[figType '-' dataType '_' obj.EXPS.name];
         end
     end
     function [subj,sub,passes]=parse_varargin(obj,vin)

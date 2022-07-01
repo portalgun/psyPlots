@@ -212,7 +212,7 @@ if bPLOT == 1
        plot(yScale*PC(i,:),yScale*PA(i,:),'ks','LineWidth',2,'MarkerSize',15); hold on;
        plot(yScale*PCbinInterp,yScale*PAbinInterp,'--k','LineWidth',1.5);
        axis square;
-       formatFigure('% Comparison Chosen','% Agreement',['stdX = ' num2str(round(stdXunq(i),3,'significant'))]);
+       Fig.format('% Comparison Chosen','% Agreement',['stdX = ' num2str(round(stdXunq(i),3,'significant'))]);
        set(gca,'LineWidth',1.5);
        ylim([0.4*yScale yScale]);
        set(gca,'XTick',[0:0.25*yScale:yScale]);
@@ -223,7 +223,7 @@ elseif bPLOT == 1 && bPlotManual == 1 %IF THE SUBPLOTS FROM THIS FUNCTION ARE CO
     plot(yScale*PC(i,:),yScale*PA(i,:),'ks','LineWidth',2,'MarkerSize',15); hold on;
     plot(yScale*PCbinInterp,yScale*PAbinInterp,'--k','LineWidth',1.5);
     axis square;
-    formatFigure('% Comparison Chosen','% Agreement',['stdX = ' num2str(round(stdXunq(i),3,'significant'))]);
+    Fig.format('% Comparison Chosen','% Agreement',['stdX = ' num2str(round(stdXunq(i),3,'significant'))]);
     set(gca,'LineWidth',1.5);
     ylim([0.4*yScale yScale]);
     set(gca,'XTick',[0:0.25*yScale:yScale]);

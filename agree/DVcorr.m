@@ -92,6 +92,7 @@ properties
     TindSE
 
     boot
+    bProg=true
 end
 properties(Hidden = true)
     zer
@@ -183,56 +184,45 @@ methods
             Opts=struct;
         end
 
-        p=inputParser();
-        p.addParameter('modelType','RMM');
-        p.addParameter('rhoFix'   ,[]);
-        p.addParameter('mu1Fix'   ,[]);
-        p.addParameter('mu2Fix'   ,[]);
-        p.addParameter('cr1Fix'   ,[]);
-        p.addParameter('cr2Fix'   ,[]);
-        p.addParameter('bRhoFixCmp',0);
-        p.addParameter('bMu1FixCmp',0);
-        p.addParameter('bMu2FixCmp',0);
-        p.addParameter('bCr1FixCmp',0);
-        p.addParameter('bCr2FixCmp',0);
+        P={ ...
+            'modelType',    'RMM','';
+            'rhoFix',       [],'';
+            'mu1Fix',       [],'';
+            'mu2Fix',       [],'';
+            'cr1Fix',       [],'';
+            'cr2Fix',       [],'';
+            'bRhoFixCmp',   0 ,'';
+            'bMu1FixCmp',   0, '';
+            'bMu2FixCmp',   0, '';
+            'bCr1FixCmp',   0, '';
+            'bCr2FixCmp',   0, '';
 
-        p.addParameter('bPlot'    ,0);
-        p.addParameter('nBoot'    ,1000);
-        p.addParameter('colorEllipse',[0 0 0]);
-        p.addParameter('colormap','cmapGray2');
-        p.addParameter('CI',95);
-        p.addParameter('CIcolor',0.9.*[1 1 1]);
-        p.addParameter('LineWidth',2);
+            'bPlot',        0,'';
+            'nBoot',        1000,'';
+            'colorEllipse', [0 0 0],'';
+            'colormap',     'cmapGray2','';
+            'CI',           95,'';
+            'CIcolor',      0.9.*[1 1 1],'';
+            'LineWidth',    2,'';
 
-        p.addParameter('minFuncType','fmincon');
-        p.addParameter('bParallel',0);
-        p.addParameter('nPssInd2use',[1 2]);
-        p.addParameter('Magr',[]);
-        p.addParameter('nParabSim',1000);
-        p.addParameter('nTrlParabSim',[]);
-        p.addParameter('Xname',[]);
-        p.addParameter('Xunits',[]);
+            'minFuncType',  'fmincon','';
+            'bParallel',    0,'';
+            'nPssInd2use',  [1 2],'';
+            'Magr',         [],'';
+            'nParabSim',    1000,'';
+            'nTrlParabSim', [],'';
+            'Xname',        [],'';
+            'Xunits',       [],'';
+        };
 
-
-        p=parseStruct(Opts,p);
-        flds=fieldnames(p.Results);
-        for i = 1:length(flds)
-            fld=flds{i};
-            if strcmp(fld,'minFuncType') || strcmp(fld,'bParallel')
-                continue
-            end
-            obj.(fld)=p.Results.(fld);
-        end
-        if isempty(obj.Magr)
-            obj.Magr=size(obj.RcmpChs,2);
-        end
-
+        S=Args.parse([],P,Opts);
+        [obj,Opts]=Args.applyIf(obj,S);
 
         % fit opts
-        fitOpts = optimset(p.Results.minFuncType);
+        fitOpts = optimset(Opts.minFuncType);
         fitOpts.Algorithm      = 'active-set';
         fitOpts.LargeScale     = 'off';
-        if p.Results.bParallel
+        if Opts.bParallel
            fitOpts.UseParallel = 'always';
         else
             fitOpts.UseParallel = 'never';
@@ -270,7 +260,10 @@ methods
         obj.stdX(ii,:)=[];
         obj.RcmpChs(ii,:)=[];
     end
-    function obj=run(obj)
+    function obj=run(obj,bProg)
+        if nargin >= 2
+            obj.bProg=bProg;
+        end
         obj.get_DV_corr();
         obj.get_magr();
         obj.get_binom_parab();
@@ -287,7 +280,7 @@ methods
         else
             tol=0.05;
         end
-        
+
         switch(obj.modelType)
         case 'R'
             % FIT RHO
@@ -453,11 +446,12 @@ methods
 
     end
     function obj=select_data_only(obj,c)
-        IND=obj.cmpX==obj.cmpXunq(c);
+        IND=all(obj.cmpX==obj.cmpXunq(c),2);
         obj.DATA=obj.RcmpChs(IND,:);
     end
     function obj=select(obj,c)
-        IND=obj.cmpX==obj.cmpXunq(c);
+        %IND=obj.cmpX==obj.cmpXunq(c);
+        IND=all(obj.cmpX==obj.cmpXunq(c),2);
 
         obj.DATA=obj.RcmpChs(IND,:);
         obj.std=obj.stdX(IND);
@@ -535,7 +529,7 @@ methods
             if obj.bCombineCmp
                 obj.DATA=obj.RcmpChs;
             else
-                IND=obj.cmpX==obj.cmpXunq(c);
+                IND=all(obj.cmpX==obj.cmpXunq(c),2);
                 obj.DATA=obj.RcmpChs(IND,:);
             end
 
@@ -545,7 +539,7 @@ methods
             obj.get_final_params();
             obj.package(c);
         end
-        obj.RSPAGR=structMerge(obj.RSPAGR{:});
+        obj.RSPAGR=Struct.merge(obj.RSPAGR{:});
     end
     function obj=get_bCombineCmp(obj)
         flds= {'bRhoFixCmp', 'bMu1FixCmp', 'bMu2FixCmp', 'bCr1FixCmp', 'bCr2FixCmp'};
@@ -847,14 +841,18 @@ methods
             flag=1;
         end
 
-        p=pr(length(mu),length(mu)/100,'Getting Parabola');
+        if obj.bProg
+            p=Pr(length(mu),length(mu)/100,'Getting Parabola');
+        end
         for i = 1:length(mu) % FOR EACH MEAN (cmp)
             if flag
                 cov=COV(i)*eye(N);
                 cov(cov==0)=1;
                 cov=fliplr(cov);
             end
-            p.u();
+            if obj.bProg
+                p.u();
+            end
 
             % COMPUTE AGREEMENT AND CMP CHOSEN MONTE CARLO SIMULATIONS
             [PAtmp, PCtmp] = obj.get_parab_mc(N,obj.Magr,mu(i,:),cov,obj.nParabSim,obj.nTrlParabSim);
@@ -865,13 +863,15 @@ methods
             PAl(i,:) = quantile(PAtmp,CI(1));
             PAu(i,:) = quantile(PAtmp,CI(2));
         end
-        p.c();
+        if obj.bProg
+            p.c();
+        end
     end
     function [PA,PC]=get_parab_mc(obj,N,M,mu,cov,numSim,numTrlPerSim)
     % simulates 2AFC trials for which the observer's decision variable is
-    % Gaussian distributed, then computes proportion agreement and proportion
+    % Gaussian Set.distributed, then computes proportion agreement and proportion
     % cmp chosen
-        if sum(cov(boolean(1-eye(N))))==0 % IF THERE IS NO CORRELATION BETWEEN DECISION VARIABLES, CAN COMPUTE FAST
+        if sum(cov(logical(1-eye(N))))==0 % IF THERE IS NO CORRELATION BETWEEN DECISION VARIABLES, CAN COMPUTE FAST
             % GENERATE DECISION VARIABLES
             Z = normrnd(mu(1),cov(1,1),[numTrlPerSim N numSim]);
             % COMPUTE PROPORTION CMP CHOSEN

@@ -122,7 +122,7 @@ methods
             obj.B=[obj.B; obj.y{i}(:)];
         end
     end
-    function obj=get_fA(obj,ind)
+    function get_fA(obj,ind)
         obj.xA=obj.x{ind};
         obj.fA=obj.mDists{ind}.pdf(:);
         obj.fA=obj.fA./sum(obj.fA(:));
@@ -187,7 +187,7 @@ methods
     function obj = get_LLR(obj,ind)
         obj.OUT.LLRa{ind}=log(obj.fAA{ind}./obj.fBA{ind});
         obj.OUT.LLRb{ind}=log(obj.fAB{ind}./obj.fBB{ind});
-        ctrs=bin_widths_FD([obj.OUT.LLRa{ind}; obj.OUT.LLRb{ind}]);
+        ctrs=Hist.binWidthsFD([obj.OUT.LLRa{ind}; obj.OUT.LLRb{ind}]);
         [LLRa,obj.LLRaCtrs{ind}]=hist(obj.OUT.LLRa{ind},ctrs);
         [LLRb,obj.LLRbCtrs{ind}]=hist(obj.OUT.LLRb{ind},ctrs);
         LLRa=LLRa./sum(LLRa(:));
@@ -263,7 +263,8 @@ methods
         LLR=log(A./B);
         obj.OUT.LLR_IN{ind}=LLR;
 
-        ctrs=bin_widths_FD(LLR);
+        A
+        ctrs=Hist.binWidthsFD(LLR);
         [LLR]=hist(LLR,ctrs);
         LLR=LLR./sum(LLR(:));
 
@@ -274,7 +275,7 @@ methods
 
     function name=get_name(obj,ind)
         if isempty(obj.names{ind})
-            name=num2alphaU(ind);
+            name=Num.alphaU(ind);
         else
             name=obj.names{ind};
         end
@@ -300,19 +301,19 @@ methods
 
     function plot(obj)
         figure(obj.fignum)
-        hold off
+        hold off;
         obj.plot_measurements_same();
 
         figure(obj.fignum+1)
-        hold off
+        hold off;
         obj.plot_conditionals(); hold off
 
         figure(obj.fignum+2)
-        hold off
+        hold off;
         obj.plot_LLRs();
 
         figure(obj.fignum+3)
-        hold off
+        hold off;
         obj.plot_ROCs();
     end
 
@@ -328,13 +329,13 @@ methods
         for i = 1:obj.n
             obj.plot_measurement(i,i,y,bNoFormat); hold on
             if i == 1 && ~bNoFormat
-                formatFigure('','Probability','Measurement Distributions')
+                Fig.format('','Probability','Measurement Distributions');
             elseif ~bNoFormat
-                formatFigure('','Probability','')
+                Fig.format('','Probability','');
             end
         end
         if ~bNoFormat
-            formatFigure('x','Probability','Measurement Distributions')
+            Fig.format('x','Probability','Measurement Distributions');
         end
     end
 
@@ -351,12 +352,12 @@ methods
             subplot(obj.n,1,i); hold on
             obj.plot_measurement(i,i,y,bNoFormat);
             if i == 1 && ~bNoFormat
-                formatFigure('','Probability','Measurement Distributions')
+                Fig.format('','Probability','Measurement Distributions');
             elseif ~bNoFormat
-                formatFigure('','Probability','')
+                Fig.format('','Probability','');
             end
         end
-        formatFigure('x','Probability','Measurement Distributions')
+        Fig.format('x','Probability','Measurement Distributions');
     end
 
     function plot_measurement(obj,ind,i,y,bNoFormat)
@@ -370,9 +371,9 @@ methods
         if ~exist('y','var') || isempty(y)
             y=max(obj.mDists{ind}.pdf(:).*.05);
         end
-        obj.mDists{ind}.plot_all(i,y)
+        obj.mDists{ind}.plot_all(i,y);
         if ~bNoFormat
-            formatFigure('x','Probability','Measurement Distributions')
+            Fig.format('x','Probability','Measurement Distributions');
         end
     end
 
@@ -381,12 +382,12 @@ methods
             subplot(obj.n,1,i); hold off
             obj.plot_conditional(i);
             if i == 1
-                formatFigure('','Probability','Conditional Distributions');
+                Fig.format('','Probability','Conditional Distributions');
             else
-                formatFigure('','Probability')
+                Fig.format('','Probability');
             end
         end
-        formatFigure('y','Probability','Conditional Distributions')
+        Fig.format('y','Probability','Conditional Distributions');
     end
     function plot_conditional(obj,ind,bNoFormat)
         if ~exist('bNoFormat','var')
@@ -396,23 +397,23 @@ methods
         plot(obj.fBA{ind});
         plot(obj.fAB{ind});
         plot(obj.fBB{ind});
-        obj.get_legend_conditional();
+        obj.get_legend_conditional(ind);
         if ~bNoFormat
-            formatFigure('y','Probability','Conditional Distributions')
+            Fig.format('y','Probability','Conditional Distributions');
         end
     end
     function plot_LLRs(obj)
         for i = 1:obj.n
             subplot(obj.n,1,i); hold off
             obj.plot_LLR(i);
-            formatFigure('','LLR');
+            Fig.format('','LLR');
             if i ==1
-                formatFigure('','Ratio','')
+                Fig.format('','Ratio','');
             else
-                formatFigure('','LLR')
+                Fig.format('','LLR');
             end
         end
-        formatFigure('LLR','Probability')
+        Fig.format('LLR','Probability');
     end
     function plot_LLR(obj,ind,bNoFormat)
         if ~exist('bNoFormat','var')
@@ -422,7 +423,7 @@ methods
         plot(obj.LLRbCtrs{ind},obj.LLRb{ind});
         obj.get_legend_LLR(ind);
         if ~bNoFormat
-            formatFigure('LLR','Probability','')
+            Fig.format('LLR','Probability','');
         end
     end
     function plot_ROCs(obj,bNoFormat)
@@ -432,10 +433,10 @@ methods
         for i = 1:obj.n
             subplot(obj.n,1,i); hold off
             obj.plot_ROC(i);
-            formatFigure('','Hit Rate (TP)',obj.names{i});
+            Fig.format('','Hit Rate (TP)',obj.names{i});
         end
         if ~bNoFormat
-            formatFigure('False Alarm Rate (FP)','Hit Rate (TP)');
+            Fig.format('False Alarm Rate (FP)','Hit Rate (TP)');
         end
     end
     function plot_ROC(obj,ind,bNoFormat)
@@ -446,9 +447,9 @@ methods
         plot([0,1],[0,1],'k--');
         xlim([0,1]);
         ylim([0,1]);
-        axis square
+        axis square;
         if ~bNoFormat
-            formatFigure('False Alarm Rate (FP)','Hit Rate (TP)')
+            Fig.format('False Alarm Rate (FP)','Hit Rate (TP)');
         end
         t=['AUC = ' num2str(sprintf('%.3f',round(obj.AUCs(ind),3))) ];
         text(.25,.1,t,'FontSize',18);
@@ -459,13 +460,13 @@ methods
         end
         plot(obj.LLRcCtrs{ind},obj.LLRc{ind}); hold on
         m=max(obj.LLRc{ind})*1.05;
-        plot([0 0],[0 m],'k:')
+        plot([0 0],[0 m],'k:');
         ylim([0 m]);
         if ~bNoFormat
-            formatFigure('LLR','Probability',[num2str(obj.OUT.PC{ind}.*100) '% chosen'])
+            Fig.format('LLR','Probability',[num2str(obj.OUT.PC{ind}.*100) '% chosen']);
         end
-        obj.get_legend_LLR_IN(ind)
-        hold off
+        obj.get_legend_LLR_IN(ind);
+        hold off;
     end
 %%%%%%
 end
@@ -473,7 +474,7 @@ methods(Hidden = true)
     function ha=init_panel(obj)
         ha=panel();
         ha.pack('h',{1/obj.n []});
-        ha(1).pack(obj.n)
+        ha(1).pack(obj.n);
         ha.fontsize=18;
         ha.margin=[25 20 2 2];
         ha.de.margin=2;
@@ -483,7 +484,7 @@ methods(Hidden = true)
         try
             out=interp1(x,y,q,method);
         catch ME
-            rethrow(ME)
+            rethrow(ME);
         end
         i=(out<=0 | isnan(out));
         if sum(i)>0

@@ -47,7 +47,7 @@ if bPlot==1
     fill([PC; flipud(PC)],[PAlb; PAub],0.9.*[1 1 1],'EdgeColor','none'); hold on;
     plot(PC,PA,'--k','LineWidth',1.5); hold on;
     axis square;
-    formatFigure('P(C)','P(A)');
+    Fig.format('P(C)','P(A)');
     set(gca,'LineWidth',1.5);
 end
 

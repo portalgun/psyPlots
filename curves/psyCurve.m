@@ -4,10 +4,14 @@ properties
     %lcolors=colors ./ 255;
     mFix
     sFix
+    bMFix
     bFix
     DPcrt
     nIntrvl
+    bBoot
     nBoot
+    bBest
+    nBest
     CIsz
     prcntUse
     flipCmpChs
@@ -50,17 +54,20 @@ properties
     bCI
     tCI
 
+
     mFit
     sFit
     bFit
     tFit
     PCfit
     DPfit
+    negLL
 
     mFitDstb
     sFitDstb
     bFitDstb
     tFitDstb
+    negLLDstb
 
     Ymin
     Ymax
@@ -68,60 +75,59 @@ properties
     Xmax
 end
 properties(Hidden=true)
+    titl
     bP
     bTest
     i
-   
+
     stdX
+    stds
     cmpX
     RcmpChs
 
-    stdXsel
-    cmpXsel
-    RcmpChsSel
-
-    mFitSel
-    bFitSel
-    sFitSel
-    tFitSel
-    PCfitSel
-    DPfitSel
 end
 methods
-    function obj=psyCurve(stdX,cmpX,RcmpChs,Opts)
+    function obj=psyCurve(stdX,cmpX,RcmpChs,varargin)
         bTest=0;
-        if ~exist('stdX','var')
+        if nargin < 1 || isempty(cmpX)
             bTest=1;
         else
             obj.stdX=stdX;
         end
-        if ~exist('cmpX','var')
+        if nargin < 2 || isempty(cmpX)
             bTest=1;
         else
             obj.cmpX=cmpX;
         end
-        if ~exist('RcmpChs','var')
+        if nargin < 3 || isempty(RcmpChs)
             bTest=1;
         else
             obj.RcmpChs=RcmpChs;
         end
-
-        % XXX Make sure just 1 standard
-        % XXX make sure std cmp Rchs are same size
-        if ~exist('Opts','var')
+        if nargin < 4 || isempty(varargin)
             Opts=struct;
+        elseif length(varargin)==1 && isstruct(varargin{1})
+            Opts=varargin{1};
+        else
+            Opts=struct(varargin{:});
         end
         obj.parse_opts(Opts);
 
-
-        if bTest
-            obj.bTest=1;
-        end
-
         if obj.bTest
-            obj.gen_testX()
+            obj.gen_testX();
         end
+        % XXX make sure std cmp Rchs are same size
 
+        [n,m]=size(obj.stdX);
+        if n < m && n > 1 && m > 1
+            obj.stdX=obj.stdX';
+        end
+        obj.stds=obj.stdX(1,:);
+        obj.stdX=psyCurve.rmUniformCols(obj.stdX);
+        if ~Set.isUniform(obj.stdX,1)
+            error('stdX contains multiple values');
+        end
+        obj.cmpX=psyCurve.rmUniformCols(obj.cmpX);
         if numel(obj.stdX) == 1
             obj.stdX = obj.stdX*ones(numel(obj.cmpX),1);
         end
@@ -136,9 +142,9 @@ methods
         if size(obj.RcmpChs,2) ~= 1
             obj.RcmpChs = obj.RcmpChs(:);
         end
-        %if obj.flipCmpChs
-        %    obj.RcmpChs=~obj.RcmpChs;
-        %end
+        if obj.flipCmpChs
+            obj.RcmpChs=~obj.RcmpChs;
+        end
 
         obj.nTrials=length(obj.stdX);
         obj.nLvls=numel(unique(obj.cmpX));
@@ -148,16 +154,17 @@ methods
         %obj.minFuncType = 'fmincon'; % XXX
         if strcmp(obj.minFuncType,'fmincon')
             obj.fitOpts             = optimset('fmincon');
+            obj.fitOpts.MaxPCGIter=[];
             obj.fitOpts.Algorithm   = 'active-set';
             obj.fitOpts.LargeScale  = 'off';
             obj.fitOpts.UseParallel = 'never';
             obj.fitOpts.Display     = 'none';
-            obj.fitOpts.MaxIter     = 50;
+            obj.fitOpts.MaxIter     = 500;
         elseif strcmp(obj.minFuncType,'fminsearch')
             obj.fitOpts             = optimset('fminsearch');
             obj.fitOpts.UseParallel = 'never';
             obj.fitOpts.Display     = 'off';
-            obj.fitOpts.MaxIter     = 50;
+            obj.fitOpts.MaxIter     = 500;
         end
 
         obj.run();
@@ -166,93 +173,175 @@ methods
         if ~exist('Opts','var')
             Opts=struct;
         end
-        p=inputParser();
-        p.addParameter('mFix',[]);
-        p.addParameter('sFix',[]);
-        p.addParameter('bFix',1);
-        p.addParameter('DPcrt',1); % XXX 1.36?
-        p.addParameter('nIntrvl',2);
-        p.addParameter('nBoot',1000);
-        p.addParameter('CIsz',95);
-        p.addParameter('prcntUse',100);
-        p.addParameter('minFuncType','fmincon');
-        p.addParameter('bTest',0);
-        p.addParameter('bPlot',0);
-        p.addParameter('bPlotCI',1);
-        p.addParameter('LineWidth',2);
-        p.addParameter('markersize',12);
-        p.addParameter('markerface','w');
-        p.addParameter('color','k');
-        p.addParameter('lcolor','k');
-        p.addParameter('CIalpha',.4);
-        p.addParameter('shape','o');
-        p.addParameter('Xname','X');
-        p.addParameter('Xunits','');
-        p.addParameter('nX',200);
-        p.addParameter('bExtendCurve',0);
-        p.addParameter('bTitle',1);
-        p.addParameter('flipCmpChs',0)
+        P={...
+            'mFix',[],'Num.is';
+            'sFix',[],'Num.is';
+            'bFix',1,'Num.is';
+            'bMFix',[],'Num.is';
+            'DPcrt',1,'Num.is'; % XXX 1.36?
+            'nIntrvl',2,'Num.isInt';
+            'nBoot',[],'Num.isInt';
+            'bBoot',[],'Num.is';
+            'CIsz',68,'Num.is';
+            'prcntUse',100,'Num.is';
+            'minFuncType','fmincon','ischar';
+            'flipCmpChs',0,'isbinary';
+            ...
+            'bBest',1,'isbinary';
+            'nBest',[],'Num.is';
+            'bPlot',0,'isbinary';
+            'bPlotCI',[],'isbinary';
+            'LineWidth',2,'Num.is';
+            'markersize',12,'Num.is';
+            'markerface','w','@(x) true';
+            'color','k','@(x) true';
+            'lcolor','k','@(x) true';
+            'CIalpha',.4,'Num.is';
+            'shape','o','@(x) true';
+            'Xname','X','ischar';
+            'Xunits','','ischar_e';
+            'nX',200,'Num.is';
+            'bExtendCurve',0,'isbinary';
+            'bTitle',1,'isbinary';
+            ...
+            'bTest',0,'isbinary';
+        };
 
-        p=parseStruct(Opts,p);
-        flds=fieldnames(p.Results);
-
-        for i = 1:length(flds)
-            fld=flds{i};
-            obj.(fld)=p.Results.(fld);
+        Args.parse(obj,P,Opts);
+        if ~isempty(obj.bMFix) && obj.bMFix && isempty(obj.mFix)
+            obj.mFix=unique(obj.stdX(:,1));
         end
+        if isempty(obj.bBoot)
+            if isempty(obj.nBoot) && isempty(obj.bPlotCI)
+                obj.bBoot=false;
+            elseif isempty(obj.nBoot)
+                obj.bBoot=obj.bPlotCI;
+            else
+                obj.bBoot = obj.nBoot > 1;
+            end
+        end
+        if isempty(obj.nBoot) && obj.bBoot
+            obj.nBoot=1000;
+        end
+
+        if isempty(obj.bBest)
+            if isempty(obj.nBest)
+                obj.bBest=false;
+            else
+                obj.bBest = obj.nBest > 1;
+            end
+        end
+        if isempty(obj.nBoot) && obj.bBest
+            obj.nBest=50;
+        end
+
+        if isempty(obj.bPlotCI)
+            obj.bPlotCI=obj.bBoot;
+        end
+
+
     end
-    function obj=run(obj)
-        obj.fit_boot();
-        obj.fit_basic();
+    function obj=run(obj,bRefit)
+        if nargin < 2
+            bRefit=false;
+        end
+        if bRefit
+            lMFit=obj.mFit;
+            lTFit=obj.tFit;
+            lSFit=obj.sFit;
+            lBFit=obj.bFit;
+            lNegLL=obj.negLL;
+        end
+        if obj.bBest
+            obj.fit_best();
+        else
+            obj.fit_basic();
+        end
+        if bRefit && obj.negLL < lNegLL
+            obj.mFit  =lMFit;
+            obj.tFit  =lTFit;
+            obj.sFit  =lSFit;
+            obj.bFit  =lBFit;
+            obj.negLL =lNegLL;
+        end
+
+        if obj.bBoot
+            obj.fit_boot();
+        end
         if obj.bPlot==1
             obj.plot();
         end
     end
-%% MAIN
+%- MAIN
+    function obj=fit_basic(obj)
+    %NON BOOTSTRAPPED FIT
+        [RcmpChs,cmpX,stdX]=obj.get_data();
+        S = obj.init_sel(1);
+
+        S = obj.fit(S,cmpX,RcmpChs,1);
+
+        obj.pack_dist(S);
+        obj.select_from_dist(1);
+    end
+    function obj=fit_best(obj)
+        [RcmpChs,cmpX,stdX]=obj.get_data();
+        S=obj.init_sel(obj.nBest);
+
+        for i = 1:obj.nBest
+            S = obj.fit(S,cmpX,RcmpChs,i);
+            S=  obj.gen_gauss_sel(S,i,cmpX);
+        end
+        obj.pack_dist(S);
+        obj.select_best();
+    end
     function obj=fit_boot(obj)
-        obj.mFitDstb=zeros(obj.nBoot,1);
-        obj.sFitDstb=zeros(obj.nBoot,1);
-        obj.bFitDstb=zeros(obj.nBoot,1);
-        obj.tFitDstb=zeros(obj.nBoot,1);
+        [RcmpChs,cmpX,stdX]=obj.get_data();
+        S=obj.init_sel(obj.nBoot);
+
+        nSmp=round(numel(RcmpChs).*obj.prcntUse./100);
         for i = 1:obj.nBoot
             obj.i=i;
 
-            obj.select_boot();
-            obj.fit();
-            obj.gen_gauss_sel(); %get T and PC & DP
-            obj.pack_boot_ind();
+            % Sample
+            [stdXsel,cmpXsel,RcmpChsSel]=obj.get_sample_data(nSmp);
+            S = obj.fit(S,cmpXsel,RcmpChsSel,i);
+            S=  obj.gen_gauss_sel(S,i,cmpXsel);
         end
+        obj.pack_dist(S);
         obj.pack_boot();
+        if ~obj.bBest
+            obj.select_mean();
+        end
     end
-    function obj=fit_basic(obj)
-    %NON BOOTSTRAPPED FIT
-        obj.select_all();
-        obj.fit();
-        obj.PC_fit();
-        obj.pack_all();
+%% INIT
+    function S=init_sel(obj,n)
+        S=struct('mFit',[],'sFit',[],'bFit',[],'negLL',[],'PCfit',[],'tFit',[],'DPfit',[]);
+        S=repmat(S,n,1);
     end
-%% SELECT
-    function obj=select_all(obj)
-        % SAMPLE ALL, NO REPLACMENT (AS OPPOSED TO BOOT)
-        ind=~isnan(obj.stdX) & ~isnan(obj.cmpX) & ~isnan(obj.RcmpChs);
-        obj.stdXsel=obj.stdX(ind);
-        obj.cmpXsel=obj.cmpX(ind);
-        obj.RcmpChsSel=obj.RcmpChs(ind);
+%% GET DATA
+    function [RcmpChs,cmpX,stdX]=get_data(obj)
+        nnanind=~isnan(obj.stdX) & ~isnan(obj.cmpX) & ~isnan(obj.RcmpChs);
+        RcmpChs=logical(obj.RcmpChs(nnanind));
+        RcmpChs=RcmpChs(:);
+        cmpX=obj.cmpX(:);
+        stdX=obj.stdX(:);
     end
-    function obj=select_boot(obj)
-        ind=~isnan(obj.stdX) & ~isnan(obj.cmpX) & ~isnan(obj.RcmpChs);
-        [~,indSmp] = datasample(obj.RcmpChs(ind),round(numel(obj.RcmpChs(ind)).*obj.prcntUse./100));
-        % REFIT
-        obj.stdXsel=obj.stdX(indSmp);
-        obj.cmpXsel=obj.cmpX(indSmp);
-        obj.RcmpChsSel=obj.RcmpChs(indSmp);
+    function [stdXsel,cmpXsel,RcmpChsSel]=get_sample_data(obj,nSmp)
+        indSmp = randi(nSmp,nSmp,1);
+        stdXsel=obj.stdX(indSmp);
+        cmpXsel=obj.cmpX(indSmp);
+        RcmpChsSel=obj.RcmpChs(indSmp);
     end
 %% PACK
-    function obj=pack_boot_ind(obj)
-        obj.mFitDstb(obj.i,:)=obj.mFitSel;
-        obj.sFitDstb(obj.i,:)=obj.sFitSel;
-        obj.bFitDstb(obj.i,:)=obj.bFitSel;
-        obj.tFitDstb(obj.i,:)=obj.tFitSel;
+    function obj=pack_dist(obj,S)
+        obj.mFitDstb=vertcat(S.mFit);
+        obj.sFitDstb=vertcat(S.sFit);
+        obj.bFitDstb=vertcat(S.bFit);
+        obj.tFitDstb=vertcat(S.tFit);
+        obj.negLLDstb=vertcat(S.negLL);
+        %obj.PCfitDstb=vertcat(S.PCfit); % XXX
+        %obj.DPfitDstb=vertcat(S.DPfit); % XXX
+
     end
     function obj=pack_boot(obj)
         % CONFIDENCE INTERVAL: LO & HI BOUNDS
@@ -273,120 +362,222 @@ methods
         obj.bMU = mean(obj.bFitDstb(~isnan(obj.bFitDstb)));
         obj.tMU = mean(obj.tFitDstb(~isnan(obj.tFitDstb)));
     end
-    function obj=pack_all(obj)
-        obj.mFit=obj.mFitSel;
-        obj.sFit=obj.sFitSel;
-        obj.bFit=obj.bFitSel;
+%% SELECT OUTPUT
+    function select_err(obj)
+        [Xdat,Ydat]=obj.get_dataXY();
+        Ydat=Vec.row(Ydat);
+        ctr=ceil(length(Xdat/2));
+        %Ydat(ctr)=[];
+        %Xdat(ctr)=[];
 
-        obj.tFit=obj.tFitSel;
-        obj.PCfit=obj.PCfitSel;
-        obj.DPfit=obj.DPfitSel;
+        E2=zeros(obj.nBoot,1);
+        for i = 1:length(obj.nBoot)
+            Y = obj.gen_gauss(Xdat,obj.mFitDstb(i,:),obj.sFitDstb(i,:),obj.bFitDstb(i,:));
+            E2(i)=mean((Y-Ydat).^2);
+        end
+        ind=find(E2==min(E2),1,'first');
+
+        obj.select_from_dist(ind);
+    end
+    function select_best(obj)
+        ind=find(obj.negLLDstb==min(obj.negLLDstb),1,'first');
+
+        obj.select_from_dist(ind);
+    end
+    function select_mean(obj)
+        obj.mFit = obj.mMU;
+        obj.sFit = obj.sMU;
+        obj.bFit = obj.bMU;
+
+        [RcmpChs,cmpX,stdX]=obj.get_data();
+        p0 = [obj.mFit obj.sFit obj.bFit];
+        obj.negLL=negLLFunc(p,cmpX,RcmpChs,obj.DPcrt,obj.nIntrvl);
+
+        obj.get_secondary_stats(cmpX);
+        obj.tFit = obj.tMU;
+    end
+    function select_from_dist(obj,ind)
+        obj.mFit   = obj.mFitDstb(ind,:);
+        obj.sFit   = obj.sFitDstb(ind,:);
+        obj.bFit   = obj.bFitDstb(ind,:);
+        obj.tFit   = obj.tFitDstb(ind,:);
+        obj.negLL  = obj.negLLDstb(ind,:);
+        obj.get_secondary_stats();
     end
 %% FIT
-    function obj = fit(obj)
-        pLB     = [min(obj.cmpXsel(:))*1.2 0.01.*(max(obj.cmpXsel(:))-min(obj.cmpXsel(:))) 0.35];
-        pUB     = [max(obj.cmpXsel(:))*1.2 10.0.*(max(obj.cmpXsel(:))-min(obj.cmpXsel(:))) 3.00];
+    function S = fit(obj,S,cmpX,RcmpChs,i)
+
+
+        % SET LOWER AND UPPER BOUNDS ON PARAMETERS
+        pLB     = [2.0.*min(cmpX-mean(cmpX))+mean(cmpX) 0.02.*(max(cmpX)-min(cmpX)) 0.35];
+        pUB     = [2.0.*max(cmpX-mean(cmpX))+mean(cmpX) 2.00.*(max(cmpX)-min(cmpX)) 3.00];
+
 
         % SET INITIAL PARAMETER VALUES
         m0  = obj.mFix;
         s0  = obj.sFix;
         b0  = obj.bFix;
-        if isempty(m0)
-            m0 = mean([min(obj.cmpXsel(:)) max(obj.cmpXsel(:))]);
+        if isempty(m0);
+            m0 = mean([min(cmpX), max(cmpX)]);
             m0 = m0  + .1.*randn;
         end
-        if isempty(s0)
-            v=abs(obj.cmpXsel);
-            mm=[min(v) max(v)];
-            s0 = diff(mm)./6;
+        if isempty(s0);
+            s0 = diff(Num.minMax(abs(cmpX)))./6;
             s0 = s0  + .1.*s0.*randn;
         end
-        if isempty(b0)
+        if isempty(b0);
             b0 = 1;
             b0 = b0  + .1.*b0.*randn;
         end
+        %s0
 
         p0 = [m0 s0 b0];
 
-
-        negLL = @(p) ...
-              -(sum(log(     obj.gen_gauss(obj.cmpXsel(obj.RcmpChsSel==1),p(1),p(2),p(3)) )) + ...
-                sum(log( 1 - obj.gen_gauss(obj.cmpXsel(obj.RcmpChsSel==0),p(1),p(2),p(3)) )) );
-
+        fun=@(p) psyCurve.negLLFunc(p,cmpX,RcmpChs,obj.DPcrt,obj.nIntrvl,obj.mFix,obj.sFix,obj.bFix);
         % MINIMIZE NEGATIVE LOG-LIKELIHOOD
         switch obj.minFuncType
         case 'fmincon'
-            [pFit,negLL] = fmincon(negLL,p0,[],[],[],[],pLB,pUB,[],obj.fitOpts);
+            [pFit,S(i).negLL] = fmincon(fun,p0,[],[],[],[],pLB,pUB,[],obj.fitOpts);
         case 'fminsearch'
-            [pFit,negLL] = fminsearch(neg_LL,p0,obj.fitOpts);
+            [pFit,S(i).negLL] = fminsearch(neg_LL,p0,obj.fitOpts);
+        otherwise
+            error()
         end
 
         % FINAL FIT PARAMETERS
-        if isempty(obj.mFix); obj.mFitSel = pFit(1); else; obj.mFitSel = obj.mFix; end
-        if isempty(obj.sFix); obj.sFitSel = pFit(2); else; obj.sFitSel = obj.sFix; end
-        if isempty(obj.bFix); obj.bFitSel = pFit(3); else; obj.bFitSel = obj.bFix; end
+        S(i).mFit=pFit(1);
+        S(i).sFit=pFit(2);
+        S(i).bFit=pFit(3);
     end
-    function obj=gen_gauss_sel(obj)
-        [obj.PCfitSel,obj.tFitSel,obj.DPfitSel] = obj.gen_gauss(obj.cmpXsel,obj.mFitSel,obj.sFitSel,obj.bFitSel);
+    function plot_negLL(obj)
+        [RcmpChs,cmpX,stdX]=obj.get_data();
+        m=unique(stdX);
+        s=.001:.001:.02;
+        b=1;
+
+        % SET INITIAL PARAMETER VALUES
+        nl=zeros(length(s),1);
+        m0  = obj.mFix;
+        s0  = obj.sFix;
+        b0  = obj.bFix;
+        if isempty(m0); m0 = mean([min(cmpX) max(cmpX)]); m0 = m0  + .1.*randn; end
+        if isempty(s0); s0 = diff(Num.minMax(abs(cmpX)))./6;        s0 = s0  + .1.*s0.*randn; end
+        if isempty(b0); b0 = 1;                                 b0 = b0  + .1.*b0.*randn; end
+        p0 = [m0 s0 b0];
+
+        fun=@(p) psyCurve.negLLFunc(p,cmpX,RcmpChs,obj.DPcrt,obj.nIntrvl,obj.mFix,obj.sFix,obj.bFix);
+        for i = 1:length(s)
+            nl(i)=fun([p0(1),s(i),p0(3)]);
+        end
+        plot(s,nl);
     end
-    function obj=PC_fit(obj)
-        cmpXUnq = unique(obj.cmpXsel);
-        [obj.PCfitSel,obj.tFitSel,obj.DPfitSel] = obj.gen_gauss(cmpXUnq,obj.mFitSel,obj.sFitSel,obj.bFitSel);
+    function S=gen_gauss_sel(obj,S,i,cmpX)
+        [S(i).PCfit,S(i).tFit,S(i).DPfit] = obj.gen_gauss(cmpX,S(i).mFit,S(i).sFit,S(i).bFit,obj.DPcrt,obj.nIntrvl);
     end
-    function [PC,T,DP] = gen_gauss(obj,cmpX,mFit,sFit,bFit)
-        DP = sign(cmpX-mFit).*(abs(cmpX-mFit)./sFit).^bFit; % abs() prevent complex numbers w. some betas
-        PC = normcdf( 0.5.*sqrt(obj.nIntrvl).*DP,0,1); % sign() reinstates sign of Xcmp-mFit
-        T  = sFit.*obj.DPcrt.^(1/bFit);
+    function get_secondary_stats(obj,cmpXsel)
+        if nargin < 2
+            [~,cmpXsel,~]=obj.get_data();
+        end
+        [obj.PCfit,obj.tFit,obj.DPfit] = obj.gen_gauss(unique(cmpXsel),obj.mFit,obj.sFit,obj.bFit,obj.DPcrt,obj.nIntrvl);
     end
 %%
-    function [PC,N1,N,N0]=get_PC(obj)
+    function [PC,N1,N,N0]=get_PC(obj,RcmpChsSel,cmpXsel,stdXsel)
         % STANDARD VALUES
-        XstdUnq = unique(obj.stdXsel);
+        if nargin < 2
+            [RcmpChsSel,cmpXsel,stdXsel]=obj.get_data();
+        end
+        XstdUnq = unique(stdXsel);
 
         % LOOP OVER STANDARDS
         for s = 1:length(XstdUnq)
             % INDICES FOR EACH STANDARD
-            indS = obj.stdXsel == XstdUnq(s);
+            indS = stdXsel == XstdUnq(s);
             % COMPARISON VALUES
-            XcmpUnq(:,s) = unique(obj.cmpXsel(indS));
+            XcmpUnq(:,s) = unique(cmpXsel(indS));
             % LOOP OVER COMPARISONS
             for c = 1:length(XcmpUnq(:,s))
                 % INDICES IN STD / CMP CONDITION
-                indCnd  = obj.stdXsel ==XstdUnq(s) & obj.cmpXsel==XcmpUnq(c,s);
+                indCnd  = stdXsel ==XstdUnq(s) & cmpXsel==XcmpUnq(c,s);
                 % TOTAL NUMBER OF TRIALS IN CONDITION
                 N(c,s)  = sum( indCnd );
                 % TOTAL NUMBER OF CMP CHOSEN IN CONDITION
-                N1(c,s) = sum( obj.RcmpChsSel(indCnd)==1 );
+                N1(c,s) = sum( RcmpChsSel(indCnd)==1 );
                 % TOTAL NUMBER OF STD CHOSEN IN CONDITION
-                N0(c,s) = sum( obj.RcmpChsSel(indCnd)==0 );
+                N0(c,s) = sum( RcmpChsSel(indCnd)==0 );
             end
         end
 
         PC = N1./N;
     end
 %% PLOT
+    function Plot(obj,meas,units,mult,xfrmt);
+        if nargin < 2
+            meas=[];
+        end
+        if nargin < 3
+            units=[];
+        end
+        if nargin < 4
+            mult=[];
+        end
+        if nargin < 5
+            xfrmt=[];
+        end
+        if nargin < 6
+            stdNames=[];
+        end
+        obj.plot();
+
+        obj.Format(meas,units,mult,xfrmt);
+        hold off;
+    end
+    function Format(obj,meas,units,mult,xfrmt)
+        if nargin < 2
+            meas=1;
+        end
+        if nargin < 3
+            units=1;
+        end
+        if nargin < 4
+            mult=1;
+        end
+        if nargin < 5
+            xfrmt=[];
+        end
+        if nargin < 6
+            stdNames=[];
+        end
+
+        obj.xylim();
+        obj.ylabel();
+        obj.rylabel(mult);
+        obj.cmplabel(meas,units);
+        obj.cmpticks(mult,xfrmt);
+
+        Axis.format;
+    end
     function [] = plot_all(obj)
-        figure(nFn);
-        hold off
-        subPlot([2,2],1,1)
+        Fig.new();
+        hold off;
+        subPlot([2,2],1,1);
         obj.plot_boot_curve();
         obj.plot_boot_params(2);
-        subPlot([2 2],2,1)
+        subPlot([2 2],2,1);
         obj.plot_boot_DP();
     end
     function [] = plot(obj)
-        figure(nFn)
-        hold off
         obj.plot_boot_curve();
+        hold on;
+        obj.plot_data();
     end
     function [] = plot_params(obj)
-        figure(nFn)
-        hold off
+        Fig.new();
+        hold off;
         obj.plot_boot_params();
     end
     function [] = plot_DP(obj)
-        figure(nFn)
-        hold off
+        Fig.new();
+        hold off;
         obj.plot_boot_DP();
     end
 %%%
@@ -424,25 +615,132 @@ methods(Hidden = true)
 
     end
 
-    function obj = plot_boot_curve(obj,sym)
-        if ~exist('sym','var') || isempty(sym)
-            sym=obj.shape;
-        end
-
-        % UNIQUE COMPARISON VALUES
+    function [Xdat,Ydat]=get_dataXY(obj)
         Xdat = transpose(unique(obj.cmpX));
         % PROPORTION CMP CHOSEN
+        Ydat=zeros(length(Xdat),1);
         for i = 1:length(Xdat)
             ind = obj.cmpX(:) == Xdat(i);
             Ydat(i) = mean(obj.RcmpChs(ind));
         end
+    end
+    function plot_data(obj,sym,color)
+        if ~exist('sym','var') || isempty(sym)
+            sym=obj.shape;
+        end
+        if ~exist('color','var') || isempty(color)
+            color=obj.lcolor;
+        end
+        [Xdat,Ydat]=obj.get_dataXY();
+        % UNIQUE COMPARISON VALUES
+        plot(Xdat,Ydat,sym,'color',color, 'markerface',obj.markerface,'markersize',obj.markersize,'LineWidth',obj.LineWidth);
+    end
+    function xylim(obj,Xdat)
+        [Xdat,~]=obj.get_dataXY();
+        d=max(Xdat) - min(Xdat);
+        m=d*0.05;
+        xlim([min(Xdat)-m max(Xdat)+m]);
+        ylim([0 1]);
+    end
+    function ylabel(obj)
+        ylabel('Prop. Cmp Chosen');
+        yt=num2cell(yticks);
+        yt=cellfun(@(x) sprintf('%.1f',x),yt,'UniformOutput',false);
+        yticklabels(yt);;
+    end
+    function rylabel(obj,mult)
+        if nargin < 2 || isempty(mult)
+            mult=1;
+        end
+        text=obj.statsText(mult,newline);
+
+        yyaxis right;
+        ylabel(text);
+        yticks('');
+        yticklabels('');
+        set(gca,'ycolor','k');
+        set(get(gca,'ylabel'),'rotation',0,'VerticalAlignment','middle','HorizontalAlignment','left') ;
+        yyaxis left;
+
+    end
+    function strs=stdstr(obj,mult, names, bUnit)
+        if nargin < 2 || isempty(mult)
+            mult=1;
+        end
+        if nargin < 3
+            names=[];
+        end
+        if nargin < 4
+            bUnit=true;
+        end
+        n=length(obj.stds);
+        strs=cell(n,1);
+        vals=Vec.row(mult).*obj.stds;
+        for i = 1:n
+            if isempty(names)
+                if n==1
+                    I='X';
+                else
+                    I=['X' num2str(i)];
+                end
+            elseif length(names)==n
+                I=names{i};
+            elseif iscell(names)
+                I=names{i};
+            else
+                I=names;
+            end
+            if bUnit
+                I=[I ' '];
+            else
+                I='';
+            end
+            strs{i}=[I Num.toStr(vals(i))];
+        end
+    end
+    function cmplabel(obj,meas,units)
+        if nargin < 1 || isempty(meas)
+            meas='x';
+        end
+        if nargin < 2 || isempty(units)
+            units='a.u.';
+        end
+        meas(1)=upper(meas(1));
+        units=['(' units ')'];
+        xlabel([ meas ' ' units ]);
+    end
+    function cmpticks(obj,mult,xfrmt,Xdat)
+        if nargin < 2 || isempty(mult)
+            mult=1;
+        end
+        if nargin < 3
+            xfrmt=[];
+        end
+        if nargin < 4 || isempty(Xdat)
+            [Xdat,~]=obj.get_dataXY();
+        end
+        xticks(Xdat);
+        if mult==1 && isempty(xfrmt)
+            return
+        end
+        lbls=xticklabels;
+        if isempty(xfrmt)
+            spl=strsplit(lbls{1},'.');
+            n=numel(spl{2});
+            xfrmt=['%.' num2str(n) 'f'];
+        end
+        lbls=cellfun(@(x) num2str(str2double(x)*mult,xfrmt),lbls,'UniformOutput',false);
+        xticklabels(lbls);
+    end
+    function obj = plot_boot_curve(obj)
+
 
         a=min(obj.cmpX);
         b=max(obj.cmpX);
         if obj.bExtendCurve
             rang=b-a;
-            a=a-rang*2;
-            b=b+rang*2;
+            a=a-rang*obj.bExtendCurve;
+            b=b+rang*obj.bExtendCurve;
         end
         if isempty(obj.nX)
             obj.nX=200;
@@ -451,7 +749,7 @@ methods(Hidden = true)
         Xfit = linspace(a,b,obj.nX);
 
         % PSYCHOMETRIC FUNCTION FIT MEAN
-        Yfit = obj.gen_gauss(Xfit,obj.mFit,obj.sFit,obj.bFit);
+        Yfit = obj.gen_gauss(Xfit,obj.mFit,obj.sFit,obj.bFit,obj.DPcrt,obj.nIntrvl);
         if  obj.bExtendCurve
             ind=Yfit < .999 & Yfit > .001;
             Yfit=Yfit(ind);
@@ -483,12 +781,13 @@ methods(Hidden = true)
                 blh(2)=obj.bFix;
             end
 
-            c=distribute(mlh,slh,blh);
+            c=Set.distribute(mlh,slh,blh);
             c=unique(c,'rows');
             Y=zeros(size(c,2),length(Xfit));
             for i = 1:size(c,1)
                 ind=c(i,:);
-                Y(i,:)  = obj.gen_gauss(Xfit,ind(1),ind(2),ind(3));
+                % m s b
+                Y(i,:)  = obj.gen_gauss(Xfit,ind(1),ind(2),ind(3),obj.DPcrt,obj.nIntrvl);
             end
             Ymin=min(Y,[],1);
             Ymax=max(Y,[],1);
@@ -500,55 +799,79 @@ methods(Hidden = true)
             %plot(Xfit,Ymin,'r'); hold on
             %plot(Xfit,Ymax,'r');
             %HERE
-            patch([Xfit fliplr(Xfit)], [Ymin fliplr(Ymax)], obj.color,'FaceAlpha',obj.CIalpha,'EdgeColor','none'); hold on
+            patch([Xfit fliplr(Xfit)], [Ymin fliplr(Ymax)], obj.color,'FaceAlpha',obj.CIalpha,'EdgeColor','none'); hold on;
         end
 
+        hold on
         plot(Xfit,Yfit,'color',obj.lcolor,'LineWidth',obj.LineWidth); hold on;
 
 
         % Data
-        plot(Xdat,Ydat,sym,'color',obj.lcolor, 'markerface',obj.markerface,'markersize',obj.markersize,'LineWidth',obj.LineWidth);
+
     end
-    function obj=format_boot_curve(obj)
+    function obj=format_boot_curve(obj,titl,units)
+        if nargin < 2 || isempty(titl)
+            titl='';
+        else
+            titl=[titl newline];
+        end
+        if nargin < 4 || isempty(units)
+            units=obj.Xname;
+        end
+        if strcmp(units,'none')
+            units='';
+        end
 
         if obj.bTitle
-            titl=[
-
-                '\mu='    num2str(obj.mFit,'%2.2f') ...
-                ', \sigma=' num2str(obj.sFit,'%2.2f') ...
-                ', \beta='  num2str(obj.bFit,'%2.2f') ...
-            ];
         else
             titl=[];
         end
-        formatFigure(obj.Xname,'Proportion Cmp Chosen',titl)
-        axis square
+        %Axis.format(units,'Proportion Cmp Chosen',titl);
+        Axis.format(units,'Prop. Cmp Chosen',titl);
+        axis square;
+    end
+
+    function out=statsText(obj,mult,sep)
+        if nargin < 2 || isempty(mult)
+            mult=1;
+        end
+        if nargin < 3 || isempty(sep)
+            %sep=newline;
+            sep=', ';
+        end
+        out=[ ...
+            'n=' num2str(size(obj.stdX,1)) sep ...
+            '\mu='    num2str(mult*obj.mFit,'%2.2f') sep...
+            '\sigma=' num2str(mult*obj.sFit,'%2.2f') sep...
+            'T=' num2str(mult*obj.tFit,'%2.2f') sep...
+            '\beta='  num2str(obj.bFit,'%2.2f') sep ...
+        ];
     end
     function obj = plot_boot_DP(obj)
-        cmpXunq = unique(obj.cmpX)';
+        cmpXunq = transpose(unique(obj.cmpX));
         mm=[min(cmpXunq) max(cmpXunq)];
 
-        c=polyfit(cmpXunq',obj.DPfit,1);
+        c=polyfit(transpose(cmpXunq),obj.DPfit,1);
         f=@(x) c(1)*x + c(2);
         x=linspace(mm(1),mm(2),100);
         y=f(x);
-        plot(x,y,obj.lcolor,'LineWidth',obj.LineWidth); hold on
+        plot(x,y,obj.lcolor,'LineWidth',obj.LineWidth); hold on;
 
         plot(cmpXunq,obj.DPfit,[obj.shape obj.lcolor],'markersize',obj.markersize,'LineWidth',obj.LineWidth,'markerface',obj.markerface);
 
         titl=[ 'T='        num2str(obj.tFit,'%2.2f') ', N=' num2str(numel(obj.RcmpChs)) ];
-        formatFigure(obj.Xname,'d''',titl);
-        axis square
-        hold off
+        Axis.format(obj.Xname,'d''',titl);
+        axis square;
+        hold off;
     end
     function [] = plot_boot_T(obj)
-        plot(obj.stdX,obj.tMU,[obj.shape obj.lcolor],'LineWidth',obj.LineWidth); hold on
-        hold off
+        plot(obj.stdX,obj.tMU,[obj.shape obj.lcolor],'LineWidth',obj.LineWidth); hold on;
+        hold off;
     end
     function [] = errorbar_boot_T(obj)
         %? tCI need to be subtracted?
-        errorbar(obj.stdX,obj.tMU,obj.tCI,[obj.shape obj.lcolor],'LineWidth',obj.LineWidth); hold on
-        hold off
+        errorbar(obj.stdX,obj.tMU,obj.tCI,[obj.shape obj.lcolor],'LineWidth',obj.LineWidth); hold on;
+        hold off;
     end
     function [] = plot_boot_mu_p(obj)
         obj.format_param_plot('\mu',obj.mMU,obj.mCI,obj.mFitDstb);
@@ -565,20 +888,21 @@ methods(Hidden = true)
     function [] = format_param_plot(obj,name,mu,CI,dst)
         [H,B] = hist(dst,21);
         plot(B,H,'color',obj.lcolor,'LineWidth',obj.LineWidth);
-        formatFigure(name,'Num Samples',['m=' num2str(mu,  '%2.2f') ', ' num2str(obj.CIsz) '%=[' num2str(CI(1), '%2.2f') ',' num2str(CI(2),'%2.2f')  ']']);
+        Axis.format(name,'Num Samples',['m=' num2str(mu,  '%2.2f') ', ' num2str(obj.CIsz) '%=[' num2str(CI(1), '%2.2f') ',' num2str(CI(2),'%2.2f')  ']']);
         lim=[min(B) max(B)];
         l=max(abs(mu-lim));
-        xlim([mu-l mu+l])
+        xlim([mu-l mu+l]);
         %Text(.1,.9,{[num2str(obj.prcntUse) '% Data Used']},'ratio',18);
-        axis square
-        hold off
+        axis square;
+        hold off;
     end
 
     %% IND PLOT
     function [] = plot_ind_fit(obj,PCdta)
         % PLOT FIT (IN HI-RES)
-        XcmpPlt = linspace(min(obj.cmpXsel),max(obj.cmpXsel),obj.nX);
-        [PCplt,T]=obj.gen_gauss(XcmpPlt,obj.mFitSel,obj.sFitSel,obj.bFitSel); hold on;
+        [RcmpChsSel,cmpXsel,stdXsel]=obj.get_data();
+        XcmpPlt = linspace(min(cmpXsel),max(cmpXsel),obj.nX);
+        [PCplt,T]=obj.gen_gauss(XcmpPlt,obj.mFit,obj.sFit,obj.bFit,obj.nIntrvl); hold on;
 
         cmpXUnq = unique(obj.cmpX)';
 
@@ -590,31 +914,32 @@ methods(Hidden = true)
         plot(cmpXUnq,PCdta,obj.shape,'color',obj.lcolor,'Linewidth',obj.LineWidth,'markersize',obj.markersize,'markerface',obj.markerface);
 
         % WRITE STUFF TO SCREEN
-        writeText(1-.1,.1,{['n=' num2str(numel(obj.RcmpChsSel))]},'ratio',18,'right')
-        formatFigure('','',['T=' num2str(T,'%.2f') ': \mu=' num2str(obj.mFitSel,'%1.2f') ',\sigma=' num2str(obj.sFitSel,'%1.2f') ',\beta=' num2str(obj.bFitSel,'%1.2f')]);
-        xlim([min(obj.cmpXsel) max(obj.cmpXsel)]+[-.1 .1]); ylim([0 1])
-        axis square
-        hold off
+        Axis.writeText(1-.1,.1,{['n=' num2str(numel(RcmpChsSel))]},'ratio',18,'right');
+        Axis.format('','',['T=' num2str(T,'%.2f') ': \mu=' num2str(obj.mFit,'%1.2f') ',\sigma=' num2str(obj.sFit,'%1.2f') ',\beta=' num2str(obj.bFit,'%1.2f')]);
+        xlim([min(obj.cmpXsel) max(cmpXsel)]+[-.1 .1]); ylim([0 1]);
+        axis square;
+        hold off;
     end
     function [] = plot_gen_gauss(obj,T)
         % XXX
-        plot(cmpXsel,PC,'color',color,'linewidth',2); hold on
-        formatFigure('','',['T=' num2str(T,'%.2f') ': \mu=' num2str(obj.mFitSel,'%1.2f') ',\sigma=' num2str(obj.sFitSel,'%1.2f') ',\beta=' num2str(obj.bFitSel,'%1.2f') ',nIntrvl=' num2str(obj.nIntrvl)]);
-        xlim(minmax(obj.cmpXsel)+[-.1 .1]);
-        ylim([0 1])
-        axis square
+        [RcmpChsSel,cmpXsel,stdXsel]=obj.get_data();
+        plot(cmpXSel,PC,'color',color,'linewidth',2); hold on;
+        Axis.format('','',['T=' num2str(T,'%.2f') ': \mu=' num2str(obj.mFit,'%1.2f') ',\sigma=' num2str(obj.sFit,'%1.2f') ',\beta=' num2str(obj.bFit,'%1.2f') ',nIntrvl=' num2str(obj.nIntrvl)]);
+        xlim(minmax(cmpXsel)+[-.1 .1]);
+        ylim([0 1]);
+        axis square;
 
         % WRITE PARAMETER VALUES AND N SMP TO SCREEN
-        writeText(.075,.900,{['d''= ( | x - \mu| / \sigma )^{\beta}' ]},'ratio',20)
-        writeText(.075,.775,{['d''_{crit}=' num2str(obj.DPcrt,'%.2f')]},'ratio',20)
+        Axis.writeText(.075,.900,{['d''= ( | x - \mu| / \sigma )^{\beta}' ]},'ratio',20);
+        Axis.writeText(.075,.775,{['d''_{crit}=' num2str(obj.DPcrt,'%.2f')]},'ratio',20);
 
-        color='k'
+        color='k';
 
         % THRESHOLD LINES
-        plot(obj.mFitSel*[1 1],        [0                  0.5],'color',obj.lcolor,'linewidth',1);
-        plot((obj.mFitSel+T)*[1 1],    [0     normcdf(0.5.*sqrt(obj.nIntrvl).*obj.DPcrt)],'color',obj.lcolor,'linewidth',1);
-        plot([min(xlim) obj.mFitSel],  [0.5                0.5],'color',obj.lcolor,'linewidth',1);
-        plot([min(xlim) obj.mFitSel+T],[normcdf(0.5.*sqrt(obj.nIntrvl).*obj.DPcrt)*[1 1]],'color',obj.lcolor,'linewidth',1);
+        plot(obj.mFit*[1 1],        [0                  0.5],'color',obj.lcolor,'linewidth',1);
+        plot((obj.mFit+T)*[1 1],    [0     normcdf(0.5.*sqrt(obj.nIntrvl).*obj.DPcrt)],'color',obj.lcolor,'linewidth',1);
+        plot([min(xlim) obj.mFit],  [0.5                0.5],'color',obj.lcolor,'linewidth',1);
+        plot([min(xlim) obj.mFit+T],[normcdf(0.5.*sqrt(obj.nIntrvl).*obj.DPcrt)*[1 1]],'color',obj.lcolor,'linewidth',1);
         hold off
     end
 %% Misc
@@ -644,7 +969,7 @@ methods(Hidden = true)
             if exist('ctr','var') && exist('nTrls','var')
                 f=divisor(nTrls);
                 d=abs(f-9);
-                ind=find(d==min(d),1,'last')
+                ind=find(d==min(d),1,'last');
                 nTrlsPerLvl=f(ind);
 
                 nLvls=nTrls/nTrlsPerLevel;
@@ -652,7 +977,7 @@ methods(Hidden = true)
                 r=2; % XXX
                 R=ctr+r;
                 L=ctr-r;
-                lvls=linspace(R,L,nLvls)
+                lvls=linspace(R,L,nLvls);
             elseif exist('ctr','var')
                 nTrlPerLvl = 100;
                 nLvls=9;
@@ -660,11 +985,11 @@ methods(Hidden = true)
                 r=2; % XXX
                 R=ctr+r;
                 L=ctr-r;
-                lvls=linspace(R,L,nLvls)
+                lvls=linspace(R,L,nLvls);
             elseif exist('nTrls','var')
                 f=divisor(nTrls);
                 d=abs(f-9);
-                ind=find(d==min(d),1,'last')
+                ind=find(d==min(d),1,'last');
                 nTrlsPerLvl=f(ind);
 
                 nLvls=nTrls/nTrlsPerLevel;
@@ -683,4 +1008,35 @@ methods(Hidden = true)
             end
     end
 end
+methods(Static)
+    function [PC,T,DP] = gen_gauss(cmpX,mFit,sFit,bFit,DPcrt,nIntrvl)
+
+        DP = sign(cmpX-mFit).*(abs(cmpX-mFit)./sFit).^bFit; % abs() prevent complex numbers w. some betas
+        PC = normcdf( 0.5.*sqrt(nIntrvl).*DP,0,1); % sign() reinstates sign of Xcmp-mFit
+        T  = sFit.*DPcrt.^(1./bFit);
+    end
+    function out=negLLFunc(p,cmpX,RcmpChs,DPcrt,nIntrvl,mFix,sFix,bFix)
+        if  nargin >= 6    && ~isempty(mFix)    p(1) = mFix; end
+        if  nargin >= 7    && ~isempty(sFix)    p(2) = sFix; end
+        if  nargin >= 8    && ~isempty(bFix)    p(3) = bFix; end
+
+        out=-(sum(log(     psyCurve.gen_gauss(cmpX(RcmpChs==1),p(1),p(2),p(3), DPcrt, nIntrvl) )) + ...
+            sum(log( 1 - psyCurve.gen_gauss(cmpX(RcmpChs==0),p(1),p(2),p(3), DPcrt, nIntrvl) )) );
+    end
+    function X=rmUniformCols(X)
+        [n,m]=size(X);
+        if n==1
+            return
+        end
+        ind=false(1,m);
+        for i = 1:m
+            ind(i)=all(X(:,i)==X(1,i));
+        end
+        if all(ind)
+            ind(1)=false;
+        end
+        X(:,ind)=[];
+    end
 end
+end
+

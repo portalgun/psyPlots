@@ -15,12 +15,13 @@ end
 methods
     function obj=measDist(name,x,y,binCtrs,method,bRmOutliers)
     %function obj=measDist(name,x,y,binCtrs,method,bRmOutliers)
+    % x are edges
 
     % IF WORKING WITH MULTIPLE MEASDIST, CHOOSE X MANUALLY
         obj.name=name;
         obj.nanind=isnan(y);
         obj.y=y;
-        if ~isvar('bRmOutliers')
+        if ~exist('bRmOutliers','var') || isempty(bRmOutliers)
             bRmOutliers=0;
         end
         if bRmOutliers
@@ -28,17 +29,17 @@ methods
         else
             y=y(:);
         end
-        if ~isvar('x')
+        if ~exist('x','var') || isempty(x)
             obj.x=1:size(y,1);
         else
             obj.x=x;
         end
-        if ~isvar('binCtrs')
-            obj.ctrs=bin_widths_FD(obj.y);
+        if ~exist('binCtrs','var') || isempty(binCtrs)
+            obj.ctrs=Hist.bin_widths_FD(obj.y);
         else
             obj.ctrs=binCtrs;
         end
-        if ~isvar('method')
+        if ~exist('method','var') || isempty(method)
             obj.method='normal';
         else
             obj.method=method;
@@ -49,7 +50,7 @@ methods
     end
     function obj=get_hist(obj)
         obj.h=hist(obj.y,obj.ctrs);
-        %obj.h=h./sum(h(:));
+        %obj.h=obj.h./sum(obj.h(:));
     end
     function obj=get_pdf(obj)
         switch obj.method
@@ -63,7 +64,7 @@ methods
             dst.get_pdf(obj.x);
             obj.pdf=dst.pdf;
             if nansum(obj.pdf) == 0
-                warning('Bad fit')
+                Error.warnSoft('Bad fit');
             end
             obj.dst=dst;
         end
@@ -84,15 +85,15 @@ methods
     end
     function plot_h(obj)
         figure(832)
-        plot(obj.ctrs,obj.h,'k')
-        formatFigure('x','count')
+        plot(obj.ctrs,obj.h,'k');
+        Fig.format('x','count');
     end
     function plot(obj)
         figure(831)
-        hold off
+        hold off;
         plot(obj.x,obj.pdf,'k'); hold on
         %plot(obj.y,zeros(size(obj.y)),'.')
-        formatFigure('x','p')
+        Fig.format('x','p');
     end
     function plot_all(obj,i,y)
         if ~exist('i','var') || isempty(i)
